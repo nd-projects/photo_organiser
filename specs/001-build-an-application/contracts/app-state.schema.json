@@ -1,0 +1,271 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Photo Album Organization App State Schema",
+  "description": "SQLite database schema and internal contracts for photo album application",
+  "version": "1.0.0",
+  "definitions": {
+    "album_order_table": {
+      "type": "object",
+      "description": "SQLite table for persisting user-defined album ordering",
+      "properties": {
+        "table_name": {
+          "const": "album_order"
+        },
+        "columns": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "description": "Auto-incrementing primary key",
+              "constraints": ["PRIMARY KEY", "AUTOINCREMENT"]
+            },
+            "album_path": {
+              "type": "string",
+              "description": "Absolute filesystem path to album directory (unique identifier)",
+              "constraints": ["UNIQUE", "NOT NULL"]
+            },
+            "sort_index": {
+              "type": "integer",
+              "description": "User-defined sort order (0-based index)",
+              "constraints": ["NOT NULL"],
+              "minimum": 0
+            },
+            "metadata": {
+              "type": "string",
+              "description": "JSON string with optional extended metadata",
+              "format": "json",
+              "default": null
+            },
+            "updated_at": {
+              "type": "string",
+              "description": "Timestamp of last update",
+              "format": "date-time",
+              "default": "CURRENT_TIMESTAMP"
+            }
+          },
+          "required": ["id", "album_path", "sort_index"]
+        },
+        "indexes": [
+          {
+            "name": "idx_sort_index",
+            "columns": ["sort_index"],
+            "unique": false
+          }
+        ]
+      }
+    },
+    "metadata_schema": {
+      "type": "object",
+      "description": "JSON metadata stored in album_order.metadata column",
+      "properties": {
+        "pinned": {
+          "type": "boolean",
+          "description": "Whether album is pinned to top",
+          "default": false
+        },
+        "custom_name": {
+          "type": ["string", "null"],
+          "description": "User-defined custom display name (overrides directory name)",
+          "default": null
+        },
+        "color_tag": {
+          "type": ["string", "null"],
+          "description": "Optional color tag for visual organization",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "default": null
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "User notes for album",
+          "default": null
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "database": {
+    "type": "sqlite3",
+    "file": "data/app.db",
+    "tables": {
+      "album_order": {
+        "$ref": "#/definitions/album_order_table"
+      }
+    }
+  },
+  "sql": {
+    "create_table": "CREATE TABLE IF NOT EXISTS album_order (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  album_path TEXT UNIQUE NOT NULL,\n  sort_index INTEGER NOT NULL,\n  metadata TEXT,\n  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);",
+    "create_index": "CREATE INDEX IF NOT EXISTS idx_sort_index ON album_order(sort_index);",
+    "queries": {
+      "get_all_ordered": "SELECT album_path, sort_index, metadata FROM album_order ORDER BY sort_index",
+      "get_by_path": "SELECT sort_index, metadata FROM album_order WHERE album_path = ?",
+      "upsert_order": "INSERT INTO album_order (album_path, sort_index, metadata)\n  VALUES (?, ?, ?)\n  ON CONFLICT(album_path) DO UPDATE SET\n    sort_index = excluded.sort_index,\n    metadata = excluded.metadata,\n    updated_at = CURRENT_TIMESTAMP",
+      "delete_by_path": "DELETE FROM album_order WHERE album_path = ?",
+      "reorder_batch": "UPDATE album_order SET sort_index = ?, updated_at = CURRENT_TIMESTAMP WHERE album_path = ?"
+    }
+  },
+  "python_types": {
+    "Album": {
+      "description": "Python dataclass representing a photo album",
+      "attributes": {
+        "path": "pathlib.Path",
+        "name": "str",
+        "date": "datetime.date | None",
+        "photo_count": "int",
+        "thumbnail_path": "pathlib.Path | None",
+        "photos": "list[Photo]"
+      },
+      "methods": {
+        "load_photos": "Lazy-load photos from directory",
+        "generate_thumbnail": "Create preview thumbnail from first photo",
+        "parse_date": "Extract date from directory name"
+      }
+    },
+    "Photo": {
+      "description": "Python dataclass representing a photo file",
+      "attributes": {
+        "path": "pathlib.Path",
+        "filename": "str",
+        "format": "str",
+        "size_bytes": "int",
+        "thumbnail_path": "pathlib.Path | None",
+        "exif_date": "datetime.datetime | None",
+        "width": "int | None",
+        "height": "int | None"
+      },
+      "methods": {
+        "load_exif": "Extract EXIF metadata",
+        "generate_thumbnail": "Create and cache thumbnail"
+      }
+    },
+    "PhotoPair": {
+      "description": "Grouping of RAW and JPEG versions of same photo",
+      "attributes": {
+        "base_name": "str",
+        "raw_path": "pathlib.Path | None",
+        "jpeg_path": "pathlib.Path"
+      },
+      "methods": {
+        "display_path": "Return preferred path for display (JPEG)"
+      }
+    },
+    "AppState": {
+      "description": "Central application state manager",
+      "attributes": {
+        "photo_dir": "pathlib.Path",
+        "db_path": "pathlib.Path",
+        "thumbnail_cache_dir": "pathlib.Path",
+        "albums": "list[Album]",
+        "current_view": "Literal['albums', 'album_detail', 'lightbox']"
+      },
+      "methods": {
+        "scan_albums": "Discover albums from filesystem",
+        "load_ordering": "Load custom ordering from database",
+        "save_ordering": "Persist album ordering to database"
+      }
+    }
+  },
+  "ui_events": {
+    "description": "Internal event contracts between UI and services",
+    "events": {
+      "album_selected": {
+        "payload": {
+          "album_path": "str"
+        },
+        "handler": "AlbumManager.open_album"
+      },
+      "photo_clicked": {
+        "payload": {
+          "photo_path": "str"
+        },
+        "handler": "LightboxController.show_photo"
+      },
+      "album_reordered": {
+        "payload": {
+          "album_path": "str",
+          "new_index": "int"
+        },
+        "handler": "AlbumManager.update_order"
+      },
+      "photos_selected": {
+        "payload": {
+          "photo_paths": "list[str]"
+        },
+        "handler": "PhotoManager.update_selection"
+      },
+      "photos_moved": {
+        "payload": {
+          "photo_paths": "list[str]",
+          "destination_album": "str"
+        },
+        "handler": "PhotoManager.move_photos"
+      },
+      "filesystem_changed": {
+        "payload": {
+          "event_type": "Literal['created', 'deleted', 'modified', 'moved']",
+          "src_path": "str",
+          "dest_path": "str | None"
+        },
+        "handler": "FilesystemWatcher.on_change"
+      }
+    }
+  },
+  "file_operations": {
+    "description": "Contracts for safe filesystem operations",
+    "operations": {
+      "move_photo": {
+        "input": {
+          "source_path": "pathlib.Path",
+          "destination_album_path": "pathlib.Path"
+        },
+        "output": {
+          "new_path": "pathlib.Path"
+        },
+        "errors": [
+          "FileNotFoundError: Source file does not exist",
+          "PermissionError: Insufficient permissions",
+          "FileExistsError: Destination file already exists",
+          "OSError: Filesystem error during move"
+        ],
+        "guarantees": "Atomic operation with rollback on failure"
+      },
+      "rename_album": {
+        "input": {
+          "album_path": "pathlib.Path",
+          "new_name": "str"
+        },
+        "output": {
+          "new_path": "pathlib.Path"
+        },
+        "validation": [
+          "new_name not empty",
+          "no invalid characters: / \\ : * ? \" < > |",
+          "no duplicate album names"
+        ],
+        "errors": [
+          "ValueError: Invalid album name",
+          "FileExistsError: Album name already exists"
+        ],
+        "guarantees": "Atomic rename with validation"
+      },
+      "create_album": {
+        "input": {
+          "parent_dir": "pathlib.Path",
+          "album_name": "str"
+        },
+        "output": {
+          "album_path": "pathlib.Path"
+        },
+        "validation": [
+          "album_name not empty",
+          "no invalid characters"
+        ],
+        "errors": [
+          "ValueError: Invalid album name",
+          "FileExistsError: Album already exists",
+          "PermissionError: Cannot create directory"
+        ],
+        "guarantees": "Directory created atomically"
+      }
+    }
+  }
+}
