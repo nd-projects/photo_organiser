@@ -31,19 +31,19 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T006 Create AppState class with JSON state file handling in src/models/app_state.py
-- [ ] T007 [P] Implement JSON state file loading and saving utilities in src/models/app_state.py
-- [ ] T008 [P] Implement thumbnail cache utility with SHA-256 keying in src/utils/thumbnail_cache.py
-- [ ] T009 [P] Implement EXIF parser for JPEG/PNG/RAW formats in src/utils/exif_parser.py
-- [ ] T010 [P] Implement file validator for album/photo names in src/utils/file_validator.py
-- [ ] T011 Create Album model dataclass with date parsing in src/models/album.py
-- [ ] T012 Create Photo model dataclass with format detection in src/models/photo.py
-- [ ] T013 Create PhotoPair grouping class for RAW-JPEG deduplication in src/models/photo.py
-- [ ] T014 Implement FilesystemScanner service for discovering albums in src/services/filesystem_scanner.py
-- [ ] T015 Implement PhotoProcessor service with thumbnail generation in src/services/photo_processor.py
-- [ ] T016 Implement RAW image preview extraction using rawpy in src/services/photo_processor.py
-- [ ] T017 Setup FilesystemWatcher with watchdog Observer pattern in src/services/filesystem_watcher.py
-- [ ] T018 Implement event debouncing (500ms) in FilesystemWatcher in src/services/filesystem_watcher.py
+- [X] T006 Create AppState class with JSON state file handling in src/models/app_state.py
+- [X] T007 [P] Implement JSON state file loading and saving utilities in src/models/app_state.py
+- [X] T008 [P] Implement thumbnail cache utility with SHA-256 keying in src/utils/thumbnail_cache.py
+- [X] T009 [P] Implement EXIF parser for JPEG/PNG/RAW formats in src/utils/exif_parser.py
+- [X] T010 [P] Implement file validator for album/photo names in src/utils/file_validator.py
+- [X] T011 Create Album model dataclass with date parsing in src/models/album.py
+- [X] T012 Create Photo model dataclass with format detection in src/models/photo.py
+- [X] T013 Create PhotoPair grouping class for RAW-JPEG deduplication in src/models/photo.py
+- [X] T014 Implement FilesystemScanner service for discovering albums in src/services/filesystem_scanner.py
+- [X] T015 Implement PhotoProcessor service with thumbnail generation in src/services/photo_processor.py
+- [X] T016 Implement RAW image preview extraction using rawpy in src/services/photo_processor.py
+- [X] T017 Setup FilesystemWatcher with watchdog Observer pattern in src/services/filesystem_watcher.py
+- [X] T018 Implement event debouncing (500ms) in FilesystemWatcher in src/services/filesystem_watcher.py
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
