@@ -51,13 +51,13 @@ This document defines the core data entities and their relationships for the pho
 
 **Attributes**:
 - `photo_dir: Path` - Root directory containing photo albums
-- `db_path: Path` - Path to SQLite database file
+- `state_file: Path` - Path to JSON state file (default: data/app_state.json)
 - `thumbnail_cache_dir: Path` - Directory for cached thumbnails
 - `albums: list[Album]` - Currently loaded albums
 - `current_view: str` - Current view state ("albums" | "album_detail" | "lightbox")
 
 **Responsibilities**:
-- Initialize and manage database connection
+- Load and save application state from JSON file
 - Scan photo directory and load albums
 - Coordinate between filesystem and UI state
 - Persist and restore album ordering
@@ -72,7 +72,8 @@ This document defines the core data entities and their relationships for the pho
 **Validation Rules**:
 - `photo_dir` MUST exist and be readable
 - `thumbnail_cache_dir` MUST be writable
-- Database schema MUST be initialized before use
+- `state_file` parent directory MUST be writable
+- JSON state file MUST be valid JSON (or missing, for fresh start)
 
 ---
 
@@ -233,39 +234,79 @@ def detect_pairs(photos: list[Photo]) -> list[PhotoPair]:
 
 ---
 
-### 5. AlbumOrder (Database Entity)
+### 5. AlbumOrder (JSON File)
 
-**Purpose**: Persists user-defined album ordering in SQLite.
+**Purpose**: Persists user-defined album ordering in a JSON file.
+
+**File Location**: `data/app_state.json`
 
 **Schema**:
-```sql
-CREATE TABLE album_order (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    album_path TEXT UNIQUE NOT NULL,
-    sort_index INTEGER NOT NULL,
-    metadata TEXT,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-**Attributes**:
-- `album_path: str` - Filesystem path (unique identifier)
-- `sort_index: int` - User-defined sort position (0-based)
-- `metadata: str` - JSON string with optional metadata
-- `updated_at: datetime` - Last modification timestamp
-
-**Metadata JSON Fields** (optional):
 ```json
 {
-  "pinned": false,
-  "custom_name": null,
-  "color_tag": null
+  "version": "1.0",
+  "album_order": [
+    {
+      "album_path": "/absolute/path/to/album1",
+      "sort_index": 0,
+      "metadata": {
+        "pinned": false,
+        "custom_name": null,
+        "color_tag": null
+      },
+      "updated_at": "2025-10-15T14:30:00Z"
+    },
+    {
+      "album_path": "/absolute/path/to/album2",
+      "sort_index": 1,
+      "metadata": {},
+      "updated_at": "2025-10-15T14:35:00Z"
+    }
+  ]
 }
 ```
+
+**Structure**:
+- `version: str` - Schema version for future migrations
+- `album_order: list[dict]` - Ordered list of album configurations
+  - `album_path: str` - Filesystem path (unique identifier)
+  - `sort_index: int` - User-defined sort position (0-based)
+  - `metadata: dict` - Optional metadata fields
+  - `updated_at: str` - ISO 8601 timestamp
+
+**Metadata Fields** (optional):
+- `pinned: bool` - Whether album is pinned to top
+- `custom_name: str | null` - Custom display name
+- `color_tag: str | null` - Color tag for grouping
 
 **Responsibilities**:
 - Persist custom album ordering across sessions
 - Support future metadata extension without schema changes
+- Simple file format for easy inspection and debugging
+
+**File Operations**:
+```python
+import json
+from pathlib import Path
+from datetime import datetime
+
+def load_album_order(state_file: Path) -> list[dict]:
+    """Load album order from JSON file."""
+    if not state_file.exists():
+        return []
+    with open(state_file, 'r') as f:
+        data = json.load(f)
+        return data.get('album_order', [])
+
+def save_album_order(state_file: Path, album_order: list[dict]):
+    """Save album order to JSON file."""
+    state_file.parent.mkdir(parents=True, exist_ok=True)
+    data = {
+        'version': '1.0',
+        'album_order': album_order
+    }
+    with open(state_file, 'w') as f:
+        json.dump(data, f, indent=2)
+```
 
 ---
 

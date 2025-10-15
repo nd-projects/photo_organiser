@@ -7,13 +7,13 @@
 
 A Python 3.13 desktop application for organizing photo albums from a local filesystem directory. The application provides a tile-based UI for viewing albums chronologically, browsing photos within albums, and reorganizing collections through drag-and-drop. Key features include RAW-JPEG deduplication, lightbox photo viewing, filesystem watching for external changes, and destructive filesystem operations (moving/renaming files directly).
 
-**Technical Approach**: tkinter-based desktop GUI with CustomTkinter for modern components, PIL for image processing, watchdog for filesystem monitoring, and local JSON/SQLite for persistent state (album ordering).
+**Technical Approach**: tkinter-based desktop GUI with CustomTkinter for modern components, PIL for image processing, watchdog for filesystem monitoring, and local JSON for persistent state (album ordering).
 
 ## Technical Context
 
 **Language/Version**: Python 3.13
-**Primary Dependencies**: tkinter (stdlib), CustomTkinter, Pillow (PIL), watchdog, exifread
-**Storage**: SQLite for application state (album ordering), filesystem as source of truth for albums/photos
+**Primary Dependencies**: tkinter (stdlib), CustomTkinter, Pillow (PIL), watchdog, exifread, json (stdlib)
+**Storage**: JSON file for application state (album ordering), filesystem as source of truth for albums/photos
 **Testing**: pytest (minimal, pragmatic testing per constitution)
 **Target Platform**: Linux desktop (Ubuntu/Debian-based systems)
 **Project Type**: Single desktop application
@@ -115,7 +115,7 @@ tests/
 
 data/
 ├── thumbnails/          # Generated thumbnail cache
-└── app.db              # SQLite database for app state
+└── app_state.json      # JSON file for app state (album ordering)
 
 pyproject.toml           # uv project configuration
 README.md               # Setup and usage instructions
@@ -146,7 +146,7 @@ Research tasks to resolve before design:
 3. **RAW Image Support**: PIL/Pillow support for CR3, HEIC formats (may need rawpy library)
 4. **Drag-Drop in tkinter**: CustomTkinter or tkinter DND implementation patterns
 5. **Large Grid Performance**: Virtualization/windowing strategies for 500+ items in tkinter grid
-6. **SQLite Schema**: Minimal schema for persisting album ordering
+6. **JSON State Format**: Minimal JSON structure for persisting album ordering
 
 Output: `research.md` with decisions, rationale, and code examples for each area.
 
@@ -161,7 +161,7 @@ After research completion:
    - AppState for persisted ordering
 
 2. **Contracts** (`contracts/`):
-   - `app-state.schema.json`: SQLite schema for app state
+   - `app-state.schema.json`: JSON schema for app state
    - Internal API contracts between UI and services (Python type hints)
 
 3. **Quickstart Guide** (`quickstart.md`):
@@ -222,7 +222,7 @@ After research completion:
   - RAW image support (rawpy with preview extraction)
   - Drag-drop (TkinterDnD2 for albums, custom for photo selection)
   - Grid performance (virtual scrolling)
-  - Database schema (minimal SQLite)
+  - JSON state format (minimal structure)
 
 ### Phase 1: Design & Contracts (Complete)
 
@@ -230,8 +230,8 @@ After research completion:
   - AppState, Album, Photo, PhotoPair, AlbumOrder
   - State machines and lifecycle diagrams
   - Performance considerations
-- ✅ `contracts/app-state.schema.json`: Database schema and API contracts
-  - SQLite table definitions
+- ✅ `contracts/app-state.schema.json`: JSON schema and API contracts
+  - JSON state structure definitions
   - Python type contracts
   - UI event contracts
   - File operation contracts

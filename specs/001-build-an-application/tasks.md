@@ -8,6 +8,7 @@
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
 ## Format: `[ID] [P?] [Story] Description`
+
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
 - Include exact file paths in descriptions
@@ -20,7 +21,7 @@
 - [X] T002 Initialize Python 3.13 project with pyproject.toml using uv
 - [X] T003 [P] Install core dependencies: customtkinter, pillow, watchdog, rawpy, tkinterdnd2, exifread
 - [X] T004 [P] Install dev dependencies: pytest, ruff
-- [X] T005 [P] Create empty __init__.py files for all modules in src/
+- [X] T005 [P] Create empty **init**.py files for all modules in src/
 
 ---
 
@@ -30,8 +31,8 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T006 Create AppState class with SQLite connection in src/models/app_state.py
-- [ ] T007 [P] Implement database schema initialization (album_order table) in src/models/app_state.py
+- [ ] T006 Create AppState class with JSON state file handling in src/models/app_state.py
+- [ ] T007 [P] Implement JSON state file loading and saving utilities in src/models/app_state.py
 - [ ] T008 [P] Implement thumbnail cache utility with SHA-256 keying in src/utils/thumbnail_cache.py
 - [ ] T009 [P] Implement EXIF parser for JPEG/PNG/RAW formats in src/utils/exif_parser.py
 - [ ] T010 [P] Implement file validator for album/photo names in src/utils/file_validator.py
@@ -67,7 +68,7 @@
 - [ ] T022 [P] [US1] Create AlbumTile widget with thumbnail display in src/ui/widgets/album_tile.py
 - [ ] T023 [US1] Implement AlbumGrid view with virtual scrolling in src/ui/album_grid.py
 - [ ] T024 [US1] Implement AlbumManager service for loading albums in src/services/album_manager.py
-- [ ] T025 [US1] Load and restore custom album ordering from database in src/services/album_manager.py
+- [ ] T025 [US1] Load and restore custom album ordering from JSON state file in src/services/album_manager.py
 - [ ] T026 [US1] Implement default chronological sorting (newest to oldest) in src/services/album_manager.py
 - [ ] T027 [US1] Create MainWindow with album grid display in src/ui/main_window.py
 - [ ] T028 [US1] Implement application startup and initialization in src/main.py (must meet <2s startup per constitution)
@@ -119,7 +120,7 @@
 - [ ] T043 [US3] Add drag-start, drag-motion, and drag-end handlers to AlbumTile in src/ui/widgets/album_tile.py
 - [ ] T044 [US3] Implement visual feedback during drag (placeholder/hover states) in src/ui/album_grid.py
 - [ ] T045 [US3] Add album reorder handler in AlbumManager in src/services/album_manager.py
-- [ ] T046 [US3] Implement save_ordering to persist to database in src/services/album_manager.py
+- [ ] T046 [US3] Implement save_ordering to persist to JSON state file in src/services/album_manager.py
 - [ ] T047 [US3] Add revert-to-chronological action in AlbumGrid in src/ui/album_grid.py
 
 **Checkpoint**: At this point, User Stories 1, 2, AND 3 should all work - albums can be reordered
@@ -304,7 +305,8 @@ With multiple developers:
 
 **Total Tasks**: 75
 
-### By Phase:
+### By Phase
+
 - **Phase 1 (Setup)**: 5 tasks
 - **Phase 2 (Foundational)**: 13 tasks (BLOCKS all stories)
 - **Phase 3 (User Story 1 - P1)**: 12 tasks (MVP)
@@ -314,26 +316,31 @@ With multiple developers:
 - **Phase 7 (User Story 5 - P3)**: 11 tasks
 - **Phase 8 (Polish)**: 9 tasks
 
-### By Priority:
+### By Priority
+
 - **Critical Path (Setup + Foundational)**: 18 tasks (23.1%)
 - **MVP (US1 + US2)**: 23 tasks (30.7%)
 - **Enhanced (US3)**: 6 tasks (8.0%)
 - **Full Feature (US4 + US5)**: 19 tasks (25.3%)
 - **Polish**: 9 tasks (12.0%)
 
-### Parallel Opportunities:
+### Parallel Opportunities
+
 - **32 tasks** marked [P] can run in parallel with others in same phase (42.7%)
 - **5 user stories** can be worked on independently after foundational phase
 
-### Independent Test Criteria:
+### Independent Test Criteria
+
 - **User Story 1**: Launch app → See albums in chronological order → All albums visible
 - **User Story 2**: Click album → See photos in grid → RAW-JPEG shown as one thumbnail → Click photo → Lightbox opens
 - **User Story 3**: Drag album → Drop in new position → Restart app → Order persists
 - **User Story 4**: Create album → Rename album → Verify filesystem directory created/renamed
 - **User Story 5**: Select photos → Move to album → Verify files moved on filesystem
 
-### Suggested MVP Scope:
+### Suggested MVP Scope
+
 **Phase 1 + Phase 2 + Phase 3 + Phase 4** (41 tasks, 54.7% of total)
+
 - Delivers: Full read-only photo album browsing experience
 - Users can: View all albums chronologically, browse photos within albums, see full-size photos, benefit from RAW-JPEG deduplication
 - Missing: Album reordering, album creation/renaming, photo moving (all non-critical for initial value)
