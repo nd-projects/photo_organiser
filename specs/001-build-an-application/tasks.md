@@ -16,11 +16,11 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create project directory structure with src/, tests/, and data/ directories
-- [ ] T002 Initialize Python 3.13 project with pyproject.toml using uv
-- [ ] T003 [P] Install core dependencies: customtkinter, pillow, watchdog, rawpy, tkinterdnd2, exifread
-- [ ] T004 [P] Install dev dependencies: pytest, ruff
-- [ ] T005 [P] Create empty __init__.py files for all modules in src/
+- [X] T001 Create project directory structure with src/, tests/, and data/ directories
+- [X] T002 Initialize Python 3.13 project with pyproject.toml using uv
+- [X] T003 [P] Install core dependencies: customtkinter, pillow, watchdog, rawpy, tkinterdnd2, exifread
+- [X] T004 [P] Install dev dependencies: pytest, ruff
+- [X] T005 [P] Create empty __init__.py files for all modules in src/
 
 ---
 
