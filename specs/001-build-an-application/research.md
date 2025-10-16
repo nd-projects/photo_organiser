@@ -1,6 +1,7 @@
 # Technical Research: Photo Album Organization Application
 
 **Date**: 2025-10-15
+**Updated**: 2025-10-16 (Changed UI framework from tkinter/CustomTkinter to PyQt6)
 **Status**: Complete
 
 This document captures technical research findings and decisions for implementing the photo album organization application.
@@ -166,62 +167,92 @@ def load_image_for_thumbnail(path: Path) -> Image:
 
 ---
 
-## 4. Drag-Drop in tkinter
+## 4. Drag-Drop in PyQt6
 
 ### Decision
 
-Use native tkinter drag-drop with TkinterDnD2 library for album reordering. For photo selection (drag-to-select), implement custom mouse event handling without DnD library.
+Use PyQt6's native drag-and-drop system with QDrag for album reordering. For photo selection (drag-to-select), use QRubberBand for visual selection rectangle.
 
 ### Rationale
 
-- **Album DnD**: TkinterDnD2 provides robust drag-drop for reordering tiles
-- **Photo selection**: Custom implementation simpler for selection rectangle
-- **No CustomTkinter DnD**: CustomTkinter doesn't have built-in DnD; TkinterDnD2 compatible
+- **Native Support**: PyQt6 has built-in, robust drag-drop via QDrag and QDropEvent
+- **Album DnD**: QDrag with custom mime data for reordering tiles
+- **Photo Selection**: QRubberBand provides native selection rectangle
+- **Cross-platform**: Works consistently across Linux, Windows, macOS
 
 ### Implementation Pattern
 
 ```python
-# Album drag-drop (using TkinterDnD2)
-from tkinterdnd2 import DND_FILES, TkinterDnD
+# Album drag-drop (using PyQt6 native)
+from PyQt6.QtWidgets import QWidget, QLabel
+from PyQt6.QtCore import Qt, QMimeData
+from PyQt6.QtGui import QDrag, QPixmap
 
-class AlbumTile(tk.Frame):
+class AlbumTile(QWidget):
     def __init__(self, parent, album):
         super().__init__(parent)
         self.album = album
+        self.setAcceptDrops(True)
 
-        # Make draggable
-        self.bind("<Button-1>", self.on_drag_start)
-        self.bind("<B1-Motion>", self.on_drag_motion)
-        self.bind("<ButtonRelease-1>", self.on_drag_end)
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.drag_start_position = event.pos()
 
-# Photo selection (custom)
-class PhotoGrid(tk.Frame):
+    def mouseMoveEvent(self, event):
+        if not (event.buttons() & Qt.MouseButton.LeftButton):
+            return
+
+        # Start drag operation
+        drag = QDrag(self)
+        mime_data = QMimeData()
+        mime_data.setText(self.album.path)
+        drag.setMimeData(mime_data)
+        drag.setPixmap(self.grab().scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
+        drag.exec(Qt.DropAction.MoveAction)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasText():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        # Handle reordering
+        event.acceptProposedAction()
+
+# Photo selection (using QRubberBand)
+from PyQt6.QtWidgets import QWidget, QRubberBand
+from PyQt6.QtCore import QRect, QPoint
+
+class PhotoGrid(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
-        self.selection_rect = None
-        self.selection_start = None
+        self.rubber_band = QRubberBand(QRubberBand.Shape.Rectangle, self)
+        self.origin = QPoint()
 
-        self.bind("<Button-1>", self.on_selection_start)
-        self.bind("<B1-Motion>", self.on_selection_drag)
-        self.bind("<ButtonRelease-1>", self.on_selection_end)
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.origin = event.pos()
+            self.rubber_band.setGeometry(QRect(self.origin, QSize()))
+            self.rubber_band.show()
 
-    def on_selection_drag(self, event):
-        """Draw selection rectangle."""
-        if self.selection_start:
-            # Calculate and draw rectangle
-            x0, y0 = self.selection_start
-            x1, y1 = event.x, event.y
+    def mouseMoveEvent(self, event):
+        if self.rubber_band.isVisible():
+            self.rubber_band.setGeometry(QRect(self.origin, event.pos()).normalized())
             # Highlight tiles within rectangle
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.rubber_band.hide()
+            # Finalize selection
 ```
 
 ### Dependencies Added
 
-- `tkinterdnd2` (for album drag-drop)
+- None (PyQt6 includes all drag-drop functionality)
 
 ### Alternatives Considered
 
-- **Pure tkinter DnD**: Rejected; low-level and error-prone
-- **CustomTkinter DnD**: Not available; would need custom implementation
+- **Third-party drag-drop library**: Rejected; PyQt6 native support is comprehensive
+- **Custom drag-drop implementation**: Rejected; would reinvent the wheel
 
 ---
 
@@ -229,152 +260,190 @@ class PhotoGrid(tk.Frame):
 
 ### Decision
 
-Implement **virtual scrolling** using tkinter Canvas with only visible tiles rendered. Render tiles in viewport ±1 screen buffer, destroy off-screen tiles to bound memory.
+Use **QListWidget with custom item delegates** or **QScrollArea with flow layout** and viewport-based rendering. PyQt6's model-view architecture provides efficient rendering of large datasets with built-in viewport culling.
 
 ### Rationale
 
-- **Memory bound**: Only ~50-100 tiles in memory vs. thousands
-- **Smooth scrolling**: Canvas provides hardware-accelerated scrolling
-- **Meets SC-006**: Handles 500 photos without degradation
-- **Implementation complexity**: Moderate but necessary for performance
+- **Native optimization**: Qt's view classes automatically handle viewport culling
+- **Memory efficient**: Only visible items are rendered/painted
+- **QListWidget**: Built-in grid mode with icon view, minimal code
+- **QScrollArea + Flow**: More control for custom layouts if needed
+- **Meets SC-006**: Handles 500+ photos with native performance
+- **Hardware acceleration**: Qt uses GPU rendering when available
 
 ### Implementation Pattern
 
 ```python
-class VirtualGrid(tk.Canvas):
-    """Virtual scrolling grid for photos/albums."""
+from PyQt6.QtWidgets import QListWidget, QListWidgetItem, QStyledItemDelegate
+from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtGui import QIcon, QPixmap
 
-    def __init__(self, parent, item_size=(150, 150), columns=5):
+class PhotoGrid(QListWidget):
+    """Efficient grid view for photos using QListWidget."""
+
+    def __init__(self, parent, item_size=(150, 150)):
         super().__init__(parent)
         self.item_size = item_size
-        self.columns = columns
-        self.items = []  # All items (lightweight data)
-        self.visible_tiles = {}  # Currently rendered tiles
 
-        # Bind scroll event
-        self.bind("<Configure>", self.on_resize)
-        self.bind("<MouseWheel>", self.on_scroll)
+        # Configure for grid display
+        self.setViewMode(QListWidget.ViewMode.IconMode)
+        self.setIconSize(QSize(*item_size))
+        self.setResizeMode(QListWidget.ResizeMode.Adjust)
+        self.setSpacing(10)
+        self.setUniformItemSizes(True)  # Performance optimization
 
-    def on_scroll(self, event):
-        """Handle scroll and update visible tiles."""
-        self.yview_scroll(-1 * (event.delta // 120), "units")
-        self.update_visible_tiles()
+        # Optional: Custom delegate for advanced rendering
+        self.setItemDelegate(PhotoItemDelegate())
 
-    def update_visible_tiles(self):
-        """Render only visible items."""
-        # Calculate visible range
-        viewport_top = self.canvasy(0)
-        viewport_bottom = self.canvasy(self.winfo_height())
+    def load_photos(self, photos):
+        """Load photos into grid (only creates items, not pixmaps)."""
+        self.clear()
+        for photo in photos:
+            item = QListWidgetItem(photo.filename)
+            item.setData(Qt.ItemDataRole.UserRole, photo)
+            # Icon loaded lazily by delegate
+            self.addItem(item)
 
-        # Add buffer (1 screen above/below)
-        buffer = self.winfo_height()
-        render_top = max(0, viewport_top - buffer)
-        render_bottom = viewport_bottom + buffer
+class PhotoItemDelegate(QStyledItemDelegate):
+    """Custom delegate for lazy thumbnail loading."""
 
-        # Calculate visible row range
-        row_height = self.item_size[1] + 10  # spacing
-        first_row = int(render_top // row_height)
-        last_row = int(render_bottom // row_height) + 1
+    def paint(self, painter, option, index):
+        photo = index.data(Qt.ItemDataRole.UserRole)
 
-        # Render visible items
-        for row in range(first_row, last_row):
-            for col in range(self.columns):
-                idx = row * self.columns + col
-                if idx < len(self.items) and idx not in self.visible_tiles:
-                    # Create tile
-                    self.visible_tiles[idx] = self.create_tile(idx)
+        # Load thumbnail only if not cached
+        if not hasattr(photo, '_cached_pixmap'):
+            # Load from thumbnail cache
+            photo._cached_pixmap = QPixmap(photo.thumbnail_path)
 
-        # Destroy off-screen tiles
-        to_remove = [
-            idx for idx in self.visible_tiles
-            if idx // self.columns < first_row or idx // self.columns > last_row
-        ]
-        for idx in to_remove:
-            self.visible_tiles[idx].destroy()
-            del self.visible_tiles[idx]
+        # Paint thumbnail
+        painter.drawPixmap(option.rect, photo._cached_pixmap)
+
+# Alternative: Custom QScrollArea with flow layout
+class CustomPhotoGrid(QScrollArea):
+    """Custom grid with viewport culling for maximum control."""
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.container = QWidget()
+        self.layout = FlowLayout(self.container)
+        self.setWidget(self.container)
+        self.setWidgetResizable(True)
+
+    def paintEvent(self, event):
+        """Only paint items in visible viewport."""
+        viewport_rect = self.viewport().rect()
+        # Paint only widgets intersecting viewport
+        super().paintEvent(event)
 ```
+
+### Key Advantages
+
+- **Built-in viewport culling**: Qt only renders visible items
+- **Efficient scrolling**: Hardware-accelerated by Qt
+- **Minimal code**: QListWidget IconMode handles grid layout
+- **Lazy loading**: Custom delegates load thumbnails on-demand
 
 ### Alternatives Considered
 
-- **Render all tiles**: Rejected; violates memory constraint (500MB limit)
-- **Pagination**: Rejected; worse UX than smooth scrolling
-- **Third-party grid**: Rejected; adds dependency and may not integrate with CustomTkinter
+- **QTableWidget**: Rejected; less efficient for uniform grids
+- **Custom widget tree**: Rejected; Qt's views already optimized
+- **Full manual viewport culling**: Rejected; Qt handles this natively
 
 ---
 
-## 6. SQLite Schema
+## 6. JSON State Format
 
 ### Decision
 
-Minimal schema with single `album_order` table storing user-defined album ordering. Use JSON for flexibility.
+Use JSON file for application state instead of SQLite. Store minimal state with single `album_order` array for user-defined album ordering.
 
 ### Rationale
 
 - **Minimal state**: Only album order needs persistence (filesystem is source of truth)
-- **Simplicity**: Single table, no migrations needed for MVP
-- **Flexibility**: JSON column allows adding metadata without schema changes
-- **Performance**: Small dataset (<10k albums), no indexing needed
+- **Simplicity**: Simple JSON structure, no database setup needed
+- **Human-readable**: Easy to inspect and debug
+- **Flexibility**: Can extend with additional fields without schema migrations
+- **Performance**: Small dataset (<10k albums), file I/O is fast enough
 
-### Schema
+### JSON Structure
 
-```sql
-CREATE TABLE IF NOT EXISTS album_order (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    album_path TEXT UNIQUE NOT NULL,  -- Filesystem path (unique identifier)
-    sort_index INTEGER NOT NULL,      -- User-defined sort order
-    metadata TEXT,                     -- JSON: {pinned: bool, custom_name: str, etc}
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_sort_index ON album_order(sort_index);
+```json
+{
+  "version": "1.0",
+  "album_order": [
+    {
+      "album_path": "/absolute/path/to/album1",
+      "sort_index": 0,
+      "metadata": {
+        "pinned": false,
+        "custom_name": null
+      },
+      "updated_at": "2025-10-16T14:30:00Z"
+    }
+  ]
+}
 ```
 
 ### Access Pattern
 
 ```python
-import sqlite3
 import json
+from pathlib import Path
+from datetime import datetime
 
-class AppStateDB:
-    def __init__(self, db_path: Path):
-        self.conn = sqlite3.connect(db_path)
-        self.create_schema()
+class AppState:
+    def __init__(self, state_file: Path):
+        self.state_file = state_file
+        self.data = self.load()
 
-    def create_schema(self):
-        self.conn.execute("""
-            CREATE TABLE IF NOT EXISTS album_order (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                album_path TEXT UNIQUE NOT NULL,
-                sort_index INTEGER NOT NULL,
-                metadata TEXT,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_sort_index ON album_order(sort_index)")
+    def load(self) -> dict:
+        """Load state from JSON file."""
+        if not self.state_file.exists():
+            return {"version": "1.0", "album_order": []}
 
-    def get_album_order(self) -> list[tuple[str, int]]:
+        with open(self.state_file, 'r') as f:
+            return json.load(f)
+
+    def save(self):
+        """Save state to JSON file."""
+        self.state_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.state_file, 'w') as f:
+            json.dump(self.data, f, indent=2)
+
+    def get_album_order(self) -> list[dict]:
         """Get all albums with their sort order."""
-        cursor = self.conn.execute(
-            "SELECT album_path, sort_index FROM album_order ORDER BY sort_index"
+        return sorted(
+            self.data.get('album_order', []),
+            key=lambda x: x['sort_index']
         )
-        return cursor.fetchall()
 
     def set_album_order(self, album_path: str, sort_index: int):
         """Set album sort order."""
-        self.conn.execute(
-            """INSERT INTO album_order (album_path, sort_index)
-               VALUES (?, ?)
-               ON CONFLICT(album_path) DO UPDATE SET sort_index=?, updated_at=CURRENT_TIMESTAMP""",
-            (album_path, sort_index, sort_index)
-        )
-        self.conn.commit()
+        orders = self.data.get('album_order', [])
+
+        # Update existing or add new
+        for order in orders:
+            if order['album_path'] == album_path:
+                order['sort_index'] = sort_index
+                order['updated_at'] = datetime.utcnow().isoformat() + 'Z'
+                break
+        else:
+            orders.append({
+                'album_path': album_path,
+                'sort_index': sort_index,
+                'metadata': {},
+                'updated_at': datetime.utcnow().isoformat() + 'Z'
+            })
+
+        self.data['album_order'] = orders
+        self.save()
 ```
 
 ### Alternatives Considered
 
-- **JSON file**: Rejected; no ACID guarantees, corruption risk
-- **Full ORM (SQLAlchemy)**: Rejected; overkill for single table, adds complexity
-- **Separate tables for metadata**: Rejected; over-engineering for MVP
+- **SQLite database**: Rejected; overkill for simple key-value storage
+- **TOML/YAML**: Rejected; JSON is simpler and stdlib-supported
+- **Binary format (pickle)**: Rejected; not human-readable, security concerns
 
 ---
 
@@ -385,18 +454,17 @@ class AppStateDB:
 ```toml
 [project]
 dependencies = [
+    "PyQt6>=6.5.0",             # GUI framework with native widgets
     "pillow>=10.0.0",           # Image processing, thumbnails
     "watchdog>=3.0.0",          # Filesystem monitoring
-    "customtkinter>=5.2.0",     # Modern UI components
     "rawpy>=0.18.0",            # RAW image support (CR3, NEF, etc)
-    "imagecodecs>=2023.0.0",    # HEIC codec for Pillow
-    "tkinterdnd2>=0.3.0",       # Drag-drop support
     "exifread>=3.0.0",          # EXIF metadata parsing
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",            # Testing framework
+    "pytest-qt>=4.2.0",         # PyQt testing utilities
     "ruff>=0.1.0",              # Linting and formatting
 ]
 ```
@@ -404,7 +472,7 @@ dev = [
 ### System Dependencies (Linux)
 
 - Python 3.13
-- tkinter (usually bundled, may need `python3-tk` package)
+- PyQt6 system libraries (usually installed with pip package)
 - libraw (for rawpy, install via `apt install libraw-dev`)
 
 ---
@@ -415,19 +483,20 @@ dev = [
 
 | Metric | Target | Implementation Strategy |
 |--------|--------|------------------------|
-| Startup time | <3s | Lazy loading; defer thumbnail generation |
+| Startup time | <2s | Lazy loading; defer thumbnail generation |
 | Thumbnail generation | <500ms/image | PIL optimized; cached on disk |
-| UI responsiveness | <100ms | Virtual scrolling; async I/O |
+| UI responsiveness | <100ms | Qt viewport culling; hardware-accelerated rendering |
 | Filesystem detection | <2s | watchdog with 500ms debounce |
-| Memory usage | <500MB | Virtual grid (50-100 tiles); disk cache |
-| Large album (500 photos) | No lag | Virtual scrolling; progressive loading |
+| Memory usage | <500MB | Qt viewport culling; disk cache |
+| Large album (500 photos) | No lag | QListWidget with lazy delegates; native optimization |
 
 ### Bottleneck Mitigation
 
 1. **Thumbnail generation**: Disk caching + lazy loading
-2. **Large grids**: Virtual scrolling (only render visible)
+2. **Large grids**: Qt viewport culling + item delegates (only paint visible)
 3. **Filesystem watching**: Event batching (debounce)
 4. **RAW decoding**: Extract embedded preview (10-100x faster)
+5. **UI rendering**: Qt hardware acceleration + efficient paint events
 
 ---
 

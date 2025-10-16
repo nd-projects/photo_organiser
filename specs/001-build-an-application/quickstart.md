@@ -1,6 +1,6 @@
 # Quickstart Guide: Photo Album Organization Application
 
-**Last Updated**: 2025-10-15
+**Last Updated**: 2025-10-16
 
 This guide will help you set up the development environment and run the photo album organization application.
 
@@ -11,15 +11,15 @@ This guide will help you set up the development environment and run the photo al
 - **Operating System**: Linux (Ubuntu 20.04+ or Debian 11+)
 - **Python**: 3.13 or higher
 - **System Libraries**:
-  - `tkinter` (usually bundled, may need `python3-tk` package)
   - `libraw` (for RAW image support)
+  - PyQt6 dependencies (installed automatically with pip)
 
 ### Install System Dependencies
 
 ```bash
 # Ubuntu/Debian
 sudo apt update
-sudo apt install python3-tk libraw-dev
+sudo apt install libraw-dev
 
 # Verify Python version
 python3 --version  # Should be 3.13+
@@ -283,14 +283,6 @@ rm data/app.db
 - `+/-`: Zoom in/out (future feature)
 
 ## Troubleshooting
-
-### Issue: "No module named 'tkinter'"
-
-**Solution**: Install tkinter system package
-
-```bash
-sudo apt install python3-tk
-```
 
 ### Issue: "Cannot load RAW images"
 

@@ -121,30 +121,37 @@ class FilesystemWatcher:
         self.callback = callback
         self.debounce_ms = debounce_ms
 
-        # Create observer and handler
-        self.observer = Observer()
-        self.handler = PhotoDirectoryHandler(callback, debounce_ms)
-
-        # Schedule watching
-        self.observer.schedule(
-            self.handler,
-            str(self.root_dir),
-            recursive=True
-        )
+        # Delay observer creation until start() is called
+        self.observer: Optional[Observer] = None
+        self.handler: Optional[PhotoDirectoryHandler] = None
 
         self._running = False
 
     def start(self) -> None:
         """Start watching the filesystem."""
         if not self._running:
+            # Create observer and handler on first start
+            if self.observer is None:
+                self.observer = Observer()
+                self.handler = PhotoDirectoryHandler(self.callback, self.debounce_ms)
+
+                # Schedule watching
+                self.observer.schedule(
+                    self.handler,
+                    str(self.root_dir),
+                    recursive=True
+                )
+
             self.observer.start()
             self._running = True
 
     def stop(self) -> None:
         """Stop watching the filesystem."""
         if self._running:
-            self.observer.stop()
-            self.handler.stop()
+            if self.observer:
+                self.observer.stop()
+            if self.handler:
+                self.handler.stop()
             self._running = False
 
     def join(self, timeout: Optional[float] = None) -> None:
@@ -153,7 +160,7 @@ class FilesystemWatcher:
         Args:
             timeout: Timeout in seconds, or None to wait indefinitely
         """
-        if self._running:
+        if self._running and self.observer:
             self.observer.join(timeout)
 
     def is_running(self) -> bool:

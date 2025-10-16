@@ -1,6 +1,7 @@
 # Data Model: Photo Album Organization Application
 
 **Date**: 2025-10-15
+**Updated**: 2025-10-16 (Changed UI framework from tkinter/CustomTkinter to PyQt6)
 **Status**: Complete
 
 This document defines the core data entities and their relationships for the photo album organization application.

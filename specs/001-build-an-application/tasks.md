@@ -2,6 +2,7 @@
 
 **Input**: Design documents from `/specs/001-build-an-application/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/app-state.schema.json
+**Updated**: 2025-10-16 (Changed UI framework from tkinter/CustomTkinter to PyQt6)
 
 **Tests**: This feature specification does not explicitly request tests. Following pragmatic testing principles, critical file operations will be tested.
 
@@ -19,9 +20,9 @@
 
 - [X] T001 Create project directory structure with src/, tests/, and data/ directories
 - [X] T002 Initialize Python 3.13 project with pyproject.toml using uv
-- [X] T003 [P] Install core dependencies: customtkinter, pillow, watchdog, rawpy, tkinterdnd2, exifread
-- [X] T004 [P] Install dev dependencies: pytest, ruff
-- [X] T005 [P] Create empty **init**.py files for all modules in src/
+- [X] T003 [P] Install core dependencies: PyQt6, pillow, watchdog, rawpy, exifread
+- [X] T004 [P] Install dev dependencies: pytest, pytest-qt, ruff
+- [X] T005 [P] Create empty __init__.py files for all modules in src/
 
 ---
 
@@ -59,21 +60,21 @@
 
 **NOTE: These tests verify critical functionality (file scanning, date parsing)**
 
-- [ ] T019 [P] [US1] Implement test for album discovery and scanning in tests/test_filesystem_scanner.py
-- [ ] T020 [P] [US1] Implement test for date parsing from folder names in tests/test_filesystem_scanner.py
+- [X] T019 [P] [US1] Implement test for album discovery and scanning in tests/test_filesystem_scanner.py
+- [X] T020 [P] [US1] Implement test for date parsing from folder names in tests/test_filesystem_scanner.py
 
 ### Implementation for User Story 1
 
-- [ ] T021 [P] [US1] Create VirtualGrid canvas widget for scrollable grids in src/ui/widgets/virtual_grid.py
-- [ ] T022 [P] [US1] Create AlbumTile widget with thumbnail display in src/ui/widgets/album_tile.py
-- [ ] T023 [US1] Implement AlbumGrid view with virtual scrolling in src/ui/album_grid.py
-- [ ] T024 [US1] Implement AlbumManager service for loading albums in src/services/album_manager.py
-- [ ] T025 [US1] Load and restore custom album ordering from JSON state file in src/services/album_manager.py
-- [ ] T026 [US1] Implement default chronological sorting (newest to oldest) in src/services/album_manager.py
-- [ ] T027 [US1] Create MainWindow with album grid display in src/ui/main_window.py
-- [ ] T028 [US1] Implement application startup and initialization in src/main.py (must meet <2s startup per constitution)
-- [ ] T029 [US1] Add command-line argument parsing for --photo-dir in src/main.py
-- [ ] T030 [US1] Connect FilesystemWatcher to UI refresh callback in src/main.py
+- [X] T021 [P] [US1] Create QListWidget-based grid widget with custom item delegates in src/ui/widgets/virtual_grid.py
+- [X] T022 [P] [US1] Create AlbumTile widget (QWidget) with thumbnail display in src/ui/widgets/album_tile.py
+- [X] T023 [US1] Implement AlbumGrid view (QListWidget in IconMode) in src/ui/album_grid.py
+- [X] T024 [US1] Implement AlbumManager service for loading albums in src/services/album_manager.py
+- [X] T025 [US1] Load and restore custom album ordering from JSON state file in src/services/album_manager.py
+- [X] T026 [US1] Implement default chronological sorting (newest to oldest) in src/services/album_manager.py
+- [X] T027 [US1] Create MainWindow with album grid display in src/ui/main_window.py
+- [X] T028 [US1] Implement application startup and initialization in src/main.py (must meet <2s startup per constitution)
+- [X] T029 [US1] Add command-line argument parsing for --photo-dir in src/main.py
+- [X] T030 [US1] Connect FilesystemWatcher to UI refresh callback in src/main.py
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - users can view all albums chronologically
 
@@ -94,9 +95,9 @@
 
 ### Implementation for User Story 2
 
-- [ ] T033 [P] [US2] Create PhotoTile widget with thumbnail display in src/ui/widgets/photo_tile.py
-- [ ] T034 [P] [US2] Create Lightbox modal for full-size photo viewing in src/ui/lightbox.py
-- [ ] T035 [US2] Implement PhotoGrid view with virtual scrolling in src/ui/photo_grid.py
+- [ ] T033 [P] [US2] Create PhotoTile widget (QWidget) with thumbnail display in src/ui/widgets/photo_tile.py
+- [ ] T034 [P] [US2] Create Lightbox modal (QDialog) for full-size photo viewing in src/ui/lightbox.py
+- [ ] T035 [US2] Implement PhotoGrid view (QListWidget in IconMode) in src/ui/photo_grid.py
 - [ ] T036 [US2] Implement photo lazy-loading when album is opened in src/services/album_manager.py
 - [ ] T037 [US2] Implement PhotoPair detection and deduplication in PhotoProcessor in src/services/photo_processor.py
 - [ ] T038 [US2] Add navigation: back button from album to main page in src/ui/main_window.py
@@ -116,9 +117,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T042 [P] [US3] Implement TkinterDnD2 drag-drop for album tiles in src/ui/widgets/drag_drop.py
-- [ ] T043 [US3] Add drag-start, drag-motion, and drag-end handlers to AlbumTile in src/ui/widgets/album_tile.py
-- [ ] T044 [US3] Implement visual feedback during drag (placeholder/hover states) in src/ui/album_grid.py
+- [ ] T042 [P] [US3] Implement PyQt6 QDrag drag-drop for album tiles in src/ui/widgets/drag_drop.py
+- [ ] T043 [US3] Add mousePressEvent, mouseMoveEvent, dragEnterEvent, dropEvent handlers to AlbumTile in src/ui/widgets/album_tile.py
+- [ ] T044 [US3] Implement visual feedback during drag (QDrag pixmap preview) in src/ui/album_grid.py
 - [ ] T045 [US3] Add album reorder handler in AlbumManager in src/services/album_manager.py
 - [ ] T046 [US3] Implement save_ordering to persist to JSON state file in src/services/album_manager.py
 - [ ] T047 [US3] Add revert-to-chronological action in AlbumGrid in src/ui/album_grid.py
@@ -169,9 +170,9 @@
 ### Implementation for User Story 5
 
 - [ ] T058 [P] [US5] Create PhotoManager service for photo operations in src/services/photo_manager.py
-- [ ] T059 [US5] Implement drag-to-select for photos in PhotoGrid in src/ui/photo_grid.py
-- [ ] T060 [US5] Add selection rectangle drawing in PhotoGrid in src/ui/photo_grid.py
-- [ ] T061 [US5] Add visual highlighting for selected photos in PhotoTile in src/ui/widgets/photo_tile.py
+- [ ] T059 [US5] Implement drag-to-select for photos using QRubberBand in PhotoGrid in src/ui/photo_grid.py
+- [ ] T060 [US5] Add selection rectangle using QRubberBand in PhotoGrid in src/ui/photo_grid.py
+- [ ] T061 [US5] Add visual highlighting for selected photos using QItemSelectionModel in PhotoTile in src/ui/widgets/photo_tile.py
 - [ ] T062 [US5] Implement move_photos in PhotoManager with filesystem operations in src/services/photo_manager.py
 - [ ] T063 [US5] Ensure RAW-JPEG pairs move together in PhotoManager in src/services/photo_manager.py
 - [ ] T064 [US5] Add "Move to Album" dialog/menu in PhotoGrid in src/ui/photo_grid.py

@@ -1,1 +1,6 @@
-"""Custom UI widgets for the photo organizer application."""
+"""UI widgets for photo organizer application."""
+
+from .virtual_grid import VirtualGrid
+from .album_tile import AlbumTile
+
+__all__ = ['VirtualGrid', 'AlbumTile']

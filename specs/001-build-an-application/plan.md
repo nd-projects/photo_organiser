@@ -1,18 +1,18 @@
 # Implementation Plan: Photo Album Organization Application
 
-**Branch**: `001-build-an-application` | **Date**: 2025-10-15 | **Spec**: [spec.md](spec.md)
+**Branch**: `001-build-an-application` | **Date**: 2025-10-15 | **Updated**: 2025-10-16 | **Spec**: [spec.md](spec.md)
 **Input**: Feature specification from `/specs/001-build-an-application/spec.md`
 
 ## Summary
 
 A Python 3.13 desktop application for organizing photo albums from a local filesystem directory. The application provides a tile-based UI for viewing albums chronologically, browsing photos within albums, and reorganizing collections through drag-and-drop. Key features include RAW-JPEG deduplication, lightbox photo viewing, filesystem watching for external changes, and destructive filesystem operations (moving/renaming files directly).
 
-**Technical Approach**: tkinter-based desktop GUI with CustomTkinter for modern components, PIL for image processing, watchdog for filesystem monitoring, and local JSON for persistent state (album ordering).
+**Technical Approach**: PyQt6-based desktop GUI with native drag-drop support, PIL for image processing, watchdog for filesystem monitoring, and local JSON for persistent state (album ordering).
 
 ## Technical Context
 
 **Language/Version**: Python 3.13
-**Primary Dependencies**: tkinter (stdlib), CustomTkinter, Pillow (PIL), watchdog, exifread, json (stdlib)
+**Primary Dependencies**: PyQt6, Pillow (PIL), watchdog, exifread, json (stdlib)
 **Storage**: JSON file for application state (album ordering), filesystem as source of truth for albums/photos
 **Testing**: pytest (minimal, pragmatic testing per constitution)
 **Target Platform**: Linux desktop (Ubuntu/Debian-based systems)
@@ -27,9 +27,9 @@ A Python 3.13 desktop application for organizing photo albums from a local files
 
 ### Principle I: Code Quality & Simplicity ✅
 
-- **Pass**: Single Python application with standard structure, minimal dependencies (tkinter, PIL, watchdog)
+- **Pass**: Single Python application with standard structure, minimal dependencies (PyQt6, PIL, watchdog)
 - **Pass**: No complex abstractions required; straightforward MVC pattern for desktop GUI
-- **Pass**: Using standard library (tkinter) and well-established libraries (PIL for images)
+- **Pass**: Using well-established libraries (PyQt6 for GUI, PIL for images)
 
 ### Principle II: User Experience Consistency ✅
 
@@ -121,7 +121,7 @@ pyproject.toml           # uv project configuration
 README.md               # Setup and usage instructions
 ```
 
-**Structure Decision**: Single desktop application structure selected. Python package in `src/` directory with clear separation of concerns (models, services, UI). Uses standard MVC-like pattern suitable for tkinter applications. Test directory focuses on critical file operations per pragmatic testing principle.
+**Structure Decision**: Single desktop application structure selected. Python package in `src/` directory with clear separation of concerns (models, services, UI). Uses standard MVC-like pattern suitable for PyQt6 applications. Test directory focuses on critical file operations per pragmatic testing principle.
 
 ## Complexity Tracking
 
@@ -129,8 +129,7 @@ README.md               # Setup and usage instructions
 
 All dependencies are standard, well-established libraries:
 
-- tkinter: Python standard library
-- CustomTkinter: Modern tkinter wrapper for better UI components
+- PyQt6: Industry-standard cross-platform GUI framework with native performance
 - Pillow: Industry-standard image processing
 - watchdog: Standard filesystem monitoring library
 - exifread: Lightweight EXIF parsing
@@ -144,8 +143,8 @@ Research tasks to resolve before design:
 1. **Thumbnail Generation Strategy**: Best practices for PIL thumbnail creation with caching
 2. **Filesystem Watching**: watchdog library patterns for efficient directory monitoring on Linux
 3. **RAW Image Support**: PIL/Pillow support for CR3, HEIC formats (may need rawpy library)
-4. **Drag-Drop in tkinter**: CustomTkinter or tkinter DND implementation patterns
-5. **Large Grid Performance**: Virtualization/windowing strategies for 500+ items in tkinter grid
+4. **Drag-Drop in PyQt6**: QDrag and QDropEvent implementation patterns for album reordering
+5. **Large Grid Performance**: QListWidget/QTableWidget optimization strategies or custom QScrollArea with viewport culling for 500+ items
 6. **JSON State Format**: Minimal JSON structure for persisting album ordering
 
 Output: `research.md` with decisions, rationale, and code examples for each area.
@@ -180,7 +179,7 @@ After research completion:
 
 - **Pass**: Data model uses simple dataclasses, no complex ORM
 - **Pass**: Service layer has clear separation of concerns (scanner, watcher, processor, managers)
-- **Pass**: UI components follow standard tkinter patterns
+- **Pass**: UI components follow standard PyQt6 patterns (QWidget, Model-View architecture)
 - **Confirmed**: Minimal dependencies, all well-established libraries
 
 ### Principle II: User Experience Consistency ✅
@@ -220,8 +219,8 @@ After research completion:
   - Thumbnail generation (PIL with disk caching)
   - Filesystem watching (watchdog with debouncing)
   - RAW image support (rawpy with preview extraction)
-  - Drag-drop (TkinterDnD2 for albums, custom for photo selection)
-  - Grid performance (virtual scrolling)
+  - Drag-drop (PyQt6 native QDrag for albums, QRubberBand for photo selection)
+  - Grid performance (QListWidget with custom delegates or viewport culling)
   - JSON state format (minimal structure)
 
 ### Phase 1: Design & Contracts (Complete)
@@ -241,7 +240,7 @@ After research completion:
   - Configuration guide
   - Keyboard shortcuts
   - Troubleshooting
-- ✅ Agent context updated: CLAUDE.md with Python 3.13 + tech stack
+- ✅ Agent context updated: CLAUDE.md with Python 3.13 + PyQt6 tech stack
 
 ## Next Steps
 

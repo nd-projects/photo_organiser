@@ -2,6 +2,7 @@
 
 **Feature Branch**: `001-build-an-application`
 **Created**: 2025-10-15
+**Updated**: 2025-10-16 (Changed UI framework from tkinter/CustomTkinter to PyQt6)
 **Status**: Draft
 **Input**: User description: "Build an application that can help me organize my photos in separate photo albums. Albums are grouped by date and can be re-organized by dragging and dropping on the main page. Albums are never in other nested albums. Within each album, photos are previewed in a tile-like interface. You can find examples of the photos here: /media/nick/Photo_Backups/Camera_Photos"
 

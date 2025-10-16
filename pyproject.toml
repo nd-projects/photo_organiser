@@ -5,18 +5,17 @@ description = "Photo album organization desktop application with tile-based UI a
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "PyQt6>=6.5.0",
     "pillow>=10.0.0",
     "watchdog>=3.0.0",
-    "customtkinter>=5.2.0",
     "rawpy>=0.18.0",
-    "imagecodecs>=2023.0.0",
-    "tkinterdnd2>=0.3.0",
     "exifread>=3.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",
+    "pytest-qt>=4.2.0",
     "ruff>=0.1.0",
 ]
 
