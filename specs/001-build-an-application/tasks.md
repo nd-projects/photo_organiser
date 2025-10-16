@@ -90,20 +90,20 @@
 
 **NOTE: These tests verify critical RAW-JPEG deduplication logic**
 
-- [ ] T031 [P] [US2] Implement test for RAW-JPEG pair detection in tests/test_photo_processor.py
-- [ ] T032 [P] [US2] Implement test for embedded RAW preview extraction in tests/test_photo_processor.py
+- [X] T031 [P] [US2] Implement test for RAW-JPEG pair detection in tests/test_photo_processor.py
+- [X] T032 [P] [US2] Implement test for embedded RAW preview extraction in tests/test_photo_processor.py
 
 ### Implementation for User Story 2
 
-- [ ] T033 [P] [US2] Create PhotoTile widget (QWidget) with thumbnail display in src/ui/widgets/photo_tile.py
-- [ ] T034 [P] [US2] Create Lightbox modal (QDialog) for full-size photo viewing in src/ui/lightbox.py
-- [ ] T035 [US2] Implement PhotoGrid view (QListWidget in IconMode) in src/ui/photo_grid.py
-- [ ] T036 [US2] Implement photo lazy-loading when album is opened in src/services/album_manager.py
-- [ ] T037 [US2] Implement PhotoPair detection and deduplication in PhotoProcessor in src/services/photo_processor.py
-- [ ] T038 [US2] Add navigation: back button from album to main page in src/ui/main_window.py
-- [ ] T039 [US2] Add photo click handler to open lightbox in src/ui/photo_grid.py
-- [ ] T040 [US2] Implement lightbox navigation (arrow keys, close on Escape) in src/ui/lightbox.py
-- [ ] T041 [US2] Add error handling for missing/corrupted images in PhotoProcessor in src/services/photo_processor.py
+- [X] T033 [P] [US2] Create PhotoTile widget (QWidget) with thumbnail display in src/ui/widgets/photo_tile.py
+- [X] T034 [P] [US2] Create Lightbox modal (QDialog) for full-size photo viewing in src/ui/lightbox.py
+- [X] T035 [US2] Implement PhotoGrid view (QListWidget in IconMode) in src/ui/photo_grid.py
+- [X] T036 [US2] Implement photo lazy-loading when album is opened in src/services/album_manager.py
+- [X] T037 [US2] Implement PhotoPair detection and deduplication in PhotoProcessor in src/services/photo_processor.py
+- [X] T038 [US2] Add navigation: back button from album to main page in src/ui/main_window.py
+- [X] T039 [US2] Add photo click handler to open lightbox in src/ui/photo_grid.py
+- [X] T040 [US2] Implement lightbox navigation (arrow keys, close on Escape) in src/ui/lightbox.py
+- [X] T041 [US2] Add error handling for missing/corrupted images in PhotoProcessor in src/services/photo_processor.py
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work - full read-only browsing experience
 

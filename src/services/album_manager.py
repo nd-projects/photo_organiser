@@ -13,8 +13,10 @@ from typing import List, Optional, Callable
 from datetime import datetime, date
 
 from ..models.album import Album
+from ..models.photo import Photo, PhotoPair
 from ..models.app_state import AppState
 from .filesystem_scanner import FilesystemScanner
+from .photo_processor import PhotoProcessor
 
 
 class AlbumManager:
@@ -31,6 +33,7 @@ class AlbumManager:
         self,
         app_state: AppState,
         scanner: FilesystemScanner,
+        photo_processor: Optional[PhotoProcessor] = None,
         on_albums_changed: Optional[Callable[[List[Album]], None]] = None
     ):
         """Initialize album manager.
@@ -38,10 +41,12 @@ class AlbumManager:
         Args:
             app_state: Application state object
             scanner: Filesystem scanner service
+            photo_processor: Photo processor for thumbnail generation
             on_albums_changed: Optional callback when albums change
         """
         self.app_state = app_state
         self.scanner = scanner
+        self.photo_processor = photo_processor
         self.on_albums_changed = on_albums_changed
 
         # Current albums
@@ -49,6 +54,9 @@ class AlbumManager:
 
         # Custom ordering (album_path -> sort_index)
         self._custom_order: dict[str, int] = {}
+
+        # Cache of loaded photos per album (album_path -> list of photos)
+        self._photo_cache: dict[str, List[Photo]] = {}
 
         # Load custom ordering from state file
         self._load_custom_ordering()
@@ -67,6 +75,9 @@ class AlbumManager:
             self._apply_custom_order()
         else:
             self._apply_default_chronological_sort()
+
+        # Generate album thumbnails
+        self._generate_album_thumbnails()
 
         # Notify observers
         self._notify_albums_changed()
@@ -472,6 +483,151 @@ class AlbumManager:
             Total number of photos
         """
         return sum(album.photo_count for album in self._albums)
+
+    # ==================== Photo Loading (Lazy) ====================
+
+    def load_photos(self, album: Album, force_reload: bool = False) -> List[Photo]:
+        """Load photos for an album (lazy loading).
+
+        Photos are cached after first load to avoid repeated scanning.
+
+        Args:
+            album: Album to load photos for
+            force_reload: Force reload even if cached
+
+        Returns:
+            List of Photo objects
+        """
+        album_path_str = str(album.path)
+
+        # Check cache
+        if not force_reload and album_path_str in self._photo_cache:
+            return self._photo_cache[album_path_str].copy()
+
+        # Scan album directory for photos
+        photos = self._scan_photos_in_album(album)
+
+        # Cache photos
+        self._photo_cache[album_path_str] = photos
+
+        # Update album's photo list
+        album.photos = photos
+
+        return photos.copy()
+
+    def _scan_photos_in_album(self, album: Album) -> List[Photo]:
+        """Scan album directory for photo files.
+
+        Args:
+            album: Album to scan
+
+        Returns:
+            List of Photo objects
+        """
+        supported_formats = {'.jpg', '.jpeg', '.png', '.heic', '.cr3', '.cr2', '.nef', '.arw', '.dng', '.raw'}
+
+        photos = []
+
+        if not album.path.exists() or not album.path.is_dir():
+            return photos
+
+        # Scan directory
+        for file_path in sorted(album.path.iterdir()):
+            if not file_path.is_file():
+                continue
+
+            if file_path.suffix.lower() in supported_formats:
+                photo = Photo(path=file_path)
+                photos.append(photo)
+
+        return photos
+
+    def load_photos_with_deduplication(
+        self,
+        album: Album,
+        force_reload: bool = False
+    ) -> List[PhotoPair]:
+        """Load photos with RAW-JPEG deduplication.
+
+        Args:
+            album: Album to load photos for
+            force_reload: Force reload even if cached
+
+        Returns:
+            List of PhotoPair objects (deduplicated)
+        """
+        # Load raw photos
+        photos = self.load_photos(album, force_reload)
+
+        # Deduplicate using PhotoPair
+        pairs = PhotoPair.detect_pairs(photos)
+
+        return pairs
+
+    def generate_thumbnails_for_album(
+        self,
+        album: Album,
+        photos: Optional[List[Photo]] = None
+    ) -> int:
+        """Generate thumbnails for all photos in an album.
+
+        Args:
+            album: Album to generate thumbnails for
+            photos: Optional list of photos (if already loaded)
+
+        Returns:
+            Number of thumbnails successfully generated
+        """
+        if not self.photo_processor:
+            return 0
+
+        # Load photos if not provided
+        if photos is None:
+            photos = self.load_photos(album)
+
+        success_count = 0
+
+        for photo in photos:
+            try:
+                thumbnail_path = self.photo_processor.generate_thumbnail(photo.path)
+                if thumbnail_path:
+                    photo.thumbnail_path = thumbnail_path
+                    success_count += 1
+            except Exception as e:
+                print(f"Warning: Could not generate thumbnail for {photo.filename}: {e}")
+
+        return success_count
+
+    def invalidate_photo_cache(self, album: Optional[Album] = None):
+        """Invalidate photo cache.
+
+        Args:
+            album: Specific album to invalidate, or None for all albums
+        """
+        if album:
+            album_path_str = str(album.path)
+            self._photo_cache.pop(album_path_str, None)
+        else:
+            self._photo_cache.clear()
+
+    def _generate_album_thumbnails(self):
+        """Generate thumbnails for all albums (using first photo)."""
+        if not self.photo_processor:
+            return
+
+        for album in self._albums:
+            if album.photo_count > 0:
+                # Load first photo
+                photos = self._scan_photos_in_album(album)
+                if len(photos) > 0:
+                    first_photo = photos[0]
+                    try:
+                        # Generate album preview thumbnail
+                        thumbnail_path = self.photo_processor.generate_album_preview(first_photo.path)
+                        if thumbnail_path:
+                            album.thumbnail_path = thumbnail_path
+                    except Exception as e:
+                        print(f"Warning: Could not generate album thumbnail for {album.name}: {e}")
 
     def __str__(self) -> str:
         """String representation."""

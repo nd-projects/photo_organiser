@@ -10,8 +10,11 @@ from typing import Optional, Callable
 from pathlib import Path
 
 from ..models.album import Album
+from ..models.photo import Photo, PhotoPair
 from ..models.app_state import AppState
 from .album_grid import AlbumGrid
+from .photo_grid import PhotoGrid
+from .lightbox import Lightbox
 
 
 class MainWindow(QMainWindow):
@@ -44,13 +47,15 @@ class MainWindow(QMainWindow):
         self.resize(1200, 800)
         self.setMinimumSize(800, 600)
 
+        # State
+        self._current_view = "albums"  # "albums" or "photos"
+        self._current_album: Optional[Album] = None
+        self._current_photos: list = []  # List[Photo | PhotoPair]
+        self._is_fullscreen = False
+
         # Create UI
         self._create_widgets()
         self._setup_keyboard_shortcuts()
-
-        # State
-        self._current_view = "albums"  # "albums" or "photos"
-        self._is_fullscreen = False
 
     def _create_widgets(self):
         """Create main window widgets."""
@@ -72,22 +77,55 @@ class MainWindow(QMainWindow):
         )
         main_layout.addWidget(self.album_grid, 1)  # Stretch factor 1
 
+        # Photo grid (hidden initially)
+        self.photo_grid = PhotoGrid(
+            on_photo_click=lambda photo, idx: None,  # Handle click (future)
+            on_photo_double_click=self._handle_photo_double_click
+        )
+        self.photo_grid.hide()
+        main_layout.addWidget(self.photo_grid, 1)  # Stretch factor 1
+
         # Status bar
         self._create_status_bar()
 
     def _create_header(self) -> QWidget:
         """Create header with title and controls."""
+        from PyQt6.QtWidgets import QPushButton
+
         header_widget = QWidget()
         header_layout = QHBoxLayout(header_widget)
         header_layout.setContentsMargins(10, 10, 10, 10)
 
+        # Back button (hidden initially)
+        self.back_button = QPushButton("← Back to Albums")
+        self.back_button.setFixedHeight(35)
+        self.back_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4a90e2;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            QPushButton:hover {
+                background-color: #357abd;
+            }
+            QPushButton:pressed {
+                background-color: #2868a8;
+            }
+        """)
+        self.back_button.clicked.connect(self._handle_back_to_albums)
+        self.back_button.hide()
+        header_layout.addWidget(self.back_button)
+
         # Title
-        title_label = QLabel("Photo Albums")
-        title_font = title_label.font()
+        self.title_label = QLabel("Photo Albums")
+        title_font = self.title_label.font()
         title_font.setPointSize(24)
         title_font.setBold(True)
-        title_label.setFont(title_font)
-        header_layout.addWidget(title_label)
+        self.title_label.setFont(title_font)
+        header_layout.addWidget(self.title_label)
 
         # Photo directory info
         dir_text = f"📁 {self.app_state.photo_dir}"
@@ -147,6 +185,33 @@ class MainWindow(QMainWindow):
         """Handle Escape key press."""
         if self._is_fullscreen:
             self._toggle_fullscreen()
+        elif self._current_view == "photos":
+            # Go back to albums if in photo view
+            self._handle_back_to_albums()
+
+    def _handle_back_to_albums(self):
+        """Handle back button click to return to album view."""
+        self._show_album_view()
+        self._current_album = None
+        self._current_photos.clear()
+
+    def _handle_photo_double_click(self, photo_or_pair, index: int):
+        """Handle photo double-click to open lightbox.
+
+        Args:
+            photo_or_pair: Photo or PhotoPair object
+            index: Index in the photo list
+        """
+        try:
+            # Open lightbox with all photos
+            lightbox = Lightbox(
+                photos=self._current_photos,
+                current_index=index,
+                parent=self
+            )
+            lightbox.exec()  # Modal dialog
+        except Exception as e:
+            self.show_error("Error", f"Could not open photo: {e}")
 
     def _toggle_fullscreen(self):
         """Toggle fullscreen mode."""
@@ -156,6 +221,37 @@ class MainWindow(QMainWindow):
         else:
             self.showFullScreen()
             self._is_fullscreen = True
+
+    def _show_album_view(self):
+        """Switch to album view."""
+        self._current_view = "albums"
+        self.photo_grid.hide()
+        self.album_grid.show()
+        self.back_button.hide()
+        self.title_label.setText("Photo Albums")
+        self._update_status()
+
+    def _show_photo_view(self):
+        """Switch to photo view."""
+        self._current_view = "photos"
+        self.album_grid.hide()
+        self.photo_grid.show()
+        self.back_button.show()
+
+        if self._current_album:
+            self.title_label.setText(f"{self._current_album.name}")
+
+        self._update_photo_status()
+
+    def _update_photo_status(self):
+        """Update status bar for photo view."""
+        photo_count = self.photo_grid.get_photo_count()
+        if photo_count == 0:
+            self.set_status("No photos in this album")
+        elif photo_count == 1:
+            self.set_status("1 photo")
+        else:
+            self.set_status(f"{photo_count} photos")
 
     # ==================== Public API ====================
 
@@ -308,6 +404,27 @@ class MainWindow(QMainWindow):
         # In PyQt6, the event loop is managed by QApplication
         # This method is kept for compatibility but does nothing
         pass
+
+    def show_photos(self, album: Album, photos: list):
+        """Display photos for an album.
+
+        Args:
+            album: Album whose photos to display
+            photos: List of Photo or PhotoPair objects
+        """
+        self._current_album = album
+        self._current_photos = photos
+
+        self.photo_grid.set_album(album)
+        self.photo_grid.set_photos(photos)
+
+        self._show_photo_view()
+
+    def clear_photos(self):
+        """Clear all photos from display."""
+        self.photo_grid.clear()
+        self._current_photos.clear()
+        self._update_photo_status()
 
     def __str__(self) -> str:
         """String representation."""

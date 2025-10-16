@@ -18,6 +18,8 @@ from .models.app_state import AppState
 from .models.album import Album
 from .services.filesystem_scanner import FilesystemScanner
 from .services.album_manager import AlbumManager
+from .services.photo_processor import PhotoProcessor
+from .utils.thumbnail_cache import ThumbnailCache
 from .ui.main_window import MainWindow
 
 
@@ -53,9 +55,16 @@ class PhotoOrganizerApp:
 
         # Initialize services
         self.scanner = FilesystemScanner(self.photo_dir)
+
+        # Initialize thumbnail cache and photo processor
+        cache_dir = Path.cwd() / "data" / "thumbnails"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        self.photo_processor = PhotoProcessor(cache_dir)
+
         self.album_manager = AlbumManager(
             app_state=self.app_state,
             scanner=self.scanner,
+            photo_processor=self.photo_processor,
             on_albums_changed=self._handle_albums_changed
         )
 
@@ -123,15 +132,42 @@ class PhotoOrganizerApp:
             album: Album to open
         """
         print(f"Opening album: {album.name}")
-        # TODO: Implement photo grid view in Phase 4 (User Story 2)
-        if self.window:
-            self.window.show_info(
-                "Album Opened",
-                f"Opening album: {album.name}\n\n"
-                f"Date: {album.date_string}\n"
-                f"Photos: {album.photo_count}\n\n"
-                f"Photo browsing will be implemented in Phase 4."
-            )
+
+        if not self.window:
+            return
+
+        try:
+            # Show loading indicator
+            self.window.show_loading(f"Loading photos from {album.name}...")
+
+            # Load photos with RAW-JPEG deduplication
+            photo_pairs = self.album_manager.load_photos_with_deduplication(album)
+
+            print(f"Loaded {len(photo_pairs)} photos (after deduplication)")
+
+            # Generate thumbnails for photos
+            if len(photo_pairs) > 0:
+                print("Generating thumbnails...")
+                # Get all photos from pairs for thumbnail generation
+                all_photos = self.album_manager.load_photos(album)
+                self.album_manager.generate_thumbnails_for_album(album, all_photos)
+
+            # Display photos in grid
+            self.window.show_photos(album, photo_pairs)
+
+            print(f"Album opened successfully: {album.name}")
+
+        except Exception as e:
+            print(f"Error opening album: {e}")
+            import traceback
+            traceback.print_exc()
+
+            if self.window:
+                self.window.hide_loading()
+                self.window.show_error(
+                    "Error Opening Album",
+                    f"Could not open album '{album.name}':\n\n{str(e)}"
+                )
 
     def _handle_albums_changed(self, albums: list[Album]):
         """Handle albums list being changed.

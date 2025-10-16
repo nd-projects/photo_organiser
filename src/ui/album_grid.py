@@ -133,11 +133,22 @@ class AlbumGrid(QWidget):
             text += f"\n{album.photo_count} photos"
             item.setText(text)
 
-            # Set icon/thumbnail (placeholder for now)
-            # TODO: Load actual thumbnail in Phase 4
-            pixmap = QPixmap(180, 180)
-            pixmap.fill(Qt.GlobalColor.lightGray)
-            item.setIcon(QIcon(pixmap))
+            # Set icon/thumbnail
+            if album.thumbnail_path and album.thumbnail_path.exists():
+                pixmap = QPixmap(str(album.thumbnail_path))
+                if not pixmap.isNull():
+                    # Scale to fit icon size while maintaining aspect ratio
+                    scaled = pixmap.scaled(
+                        180, 180,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation
+                    )
+                    item.setIcon(QIcon(scaled))
+                else:
+                    item.setIcon(QIcon(self._create_error_pixmap()))
+            else:
+                # Placeholder
+                item.setIcon(QIcon(self._create_placeholder_pixmap()))
 
             # Set size hint
             item.setSizeHint(QSize(200, 240))
@@ -319,6 +330,52 @@ class AlbumGrid(QWidget):
         """
         filtered = [album for album in self._albums if filter_func(album)]
         self.set_albums(filtered)
+
+    def _create_placeholder_pixmap(self) -> QPixmap:
+        """Create placeholder pixmap for loading state.
+
+        Returns:
+            Placeholder pixmap
+        """
+        from PyQt6.QtGui import QColor, QPainter, QFont
+
+        pixmap = QPixmap(180, 180)
+        pixmap.fill(QColor(220, 220, 220))
+
+        painter = QPainter(pixmap)
+        painter.setPen(QColor(150, 150, 150))
+        painter.setFont(QFont("Arial", 10))
+        painter.drawText(
+            pixmap.rect(),
+            Qt.AlignmentFlag.AlignCenter,
+            "No Photos"
+        )
+        painter.end()
+
+        return pixmap
+
+    def _create_error_pixmap(self) -> QPixmap:
+        """Create error pixmap for failed loads.
+
+        Returns:
+            Error pixmap
+        """
+        from PyQt6.QtGui import QColor, QPainter, QFont
+
+        pixmap = QPixmap(180, 180)
+        pixmap.fill(QColor(200, 100, 100))
+
+        painter = QPainter(pixmap)
+        painter.setPen(QColor(255, 255, 255))
+        painter.setFont(QFont("Arial", 10))
+        painter.drawText(
+            pixmap.rect(),
+            Qt.AlignmentFlag.AlignCenter,
+            "⚠\nError"
+        )
+        painter.end()
+
+        return pixmap
 
     def __str__(self) -> str:
         """String representation."""
