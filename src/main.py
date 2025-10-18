@@ -5,10 +5,10 @@ Desktop application for organizing photo albums with tile-based UI using PyQt6.
 
 import os
 import sys
-os.environ['PYTHONUNBUFFERED'] = '1'
+
+os.environ["PYTHONUNBUFFERED"] = "1"
 
 import argparse
-import logging
 import time
 from pathlib import Path
 from typing import Optional
@@ -20,7 +20,6 @@ from .models.album import Album
 from .services.filesystem_scanner import FilesystemScanner
 from .services.album_manager import AlbumManager
 from .services.photo_processor import PhotoProcessor
-from .utils.thumbnail_cache import ThumbnailCache
 from .utils.logging_config import setup_logging, get_logger
 from .utils.config_loader import ConfigLoader, AppConfig
 from .ui.main_window import MainWindow
@@ -35,7 +34,12 @@ class PhotoOrganizerApp:
     Orchestrates services and UI components.
     """
 
-    def __init__(self, photo_dir: Path, state_file: Optional[Path] = None, cache_dir: Optional[Path] = None):
+    def __init__(
+        self,
+        photo_dir: Path,
+        state_file: Optional[Path] = None,
+        cache_dir: Optional[Path] = None,
+    ):
         """Initialize application.
 
         Args:
@@ -55,10 +59,7 @@ class PhotoOrganizerApp:
         if state_file is None:
             state_file = Path.cwd() / "data" / "app_state.json"
 
-        self.app_state = AppState(
-            photo_dir=self.photo_dir,
-            state_file=state_file
-        )
+        self.app_state = AppState(photo_dir=self.photo_dir, state_file=state_file)
 
         # Initialize services
         self.scanner = FilesystemScanner(self.photo_dir)
@@ -73,7 +74,7 @@ class PhotoOrganizerApp:
             app_state=self.app_state,
             scanner=self.scanner,
             photo_processor=self.photo_processor,
-            on_albums_changed=self._handle_albums_changed
+            on_albums_changed=self._handle_albums_changed,
         )
 
         # UI
@@ -95,8 +96,7 @@ class PhotoOrganizerApp:
 
         # Create main window
         self.window = MainWindow(
-            app_state=self.app_state,
-            on_album_open=self._handle_album_open
+            app_state=self.app_state, on_album_open=self._handle_album_open
         )
 
         # Connect album grid signals for drag-drop reordering
@@ -181,13 +181,14 @@ class PhotoOrganizerApp:
         except Exception as e:
             logger.error(f"Error opening album: {e}")
             import traceback
+
             traceback.print_exc()
 
             if self.window:
                 self.window.hide_loading()
                 self.window.show_error(
                     "Error Opening Album",
-                    f"Could not open album '{album.name}':\n\n{str(e)}"
+                    f"Could not open album '{album.name}':\n\n{str(e)}",
                 )
 
     def _handle_albums_changed(self, albums: list[Album]):
@@ -211,7 +212,7 @@ class PhotoOrganizerApp:
 
         # Update album manager with new custom order
         self.album_manager.set_custom_order(albums)
-        logger.debug(f" Custom order saved to album manager")
+        logger.debug(" Custom order saved to album manager")
 
         # Status update
         if self.window:
@@ -244,8 +245,7 @@ class PhotoOrganizerApp:
         try:
             # Validate album name and check availability
             is_valid, error_msg = FileValidator.validate_and_check_availability(
-                self.photo_dir,
-                album_name
+                self.photo_dir, album_name
             )
 
             if not is_valid:
@@ -264,8 +264,7 @@ class PhotoOrganizerApp:
                 self.window.show_albums(albums)
             else:
                 self.window.album_grid.show_error(
-                    "Error Creating Album",
-                    f"Could not create album '{album_name}'"
+                    "Error Creating Album", f"Could not create album '{album_name}'"
                 )
 
         except ValueError as e:
@@ -274,10 +273,10 @@ class PhotoOrganizerApp:
         except Exception as e:
             logger.error(f"Error creating album: {e}")
             import traceback
+
             traceback.print_exc()
             self.window.album_grid.show_error(
-                "Error Creating Album",
-                f"An unexpected error occurred:\n\n{str(e)}"
+                "Error Creating Album", f"An unexpected error occurred:\n\n{str(e)}"
             )
 
     def _handle_rename_album(self, album: Album, new_name: str):
@@ -306,7 +305,7 @@ class PhotoOrganizerApp:
                 if not FileValidator.is_album_name_available(self.photo_dir, new_name):
                     self.window.album_grid.show_error(
                         "Album Already Exists",
-                        f"An album with the name '{new_name}' already exists."
+                        f"An album with the name '{new_name}' already exists.",
                     )
                     return
 
@@ -314,13 +313,14 @@ class PhotoOrganizerApp:
             success = self.album_manager.rename_album(album, new_name)
 
             if success:
-                logger.info(f"Album renamed successfully: '{album.name}' -> '{new_name}'")
+                logger.info(
+                    f"Album renamed successfully: '{album.name}' -> '{new_name}'"
+                )
                 self.window.set_status(f"Renamed album to: {new_name}")
                 # The albums_changed callback will update the UI
             else:
                 self.window.album_grid.show_error(
-                    "Error Renaming Album",
-                    f"Could not rename album to '{new_name}'"
+                    "Error Renaming Album", f"Could not rename album to '{new_name}'"
                 )
 
         except ValueError as e:
@@ -329,12 +329,11 @@ class PhotoOrganizerApp:
         except Exception as e:
             logger.error(f"Error renaming album: {e}")
             import traceback
+
             traceback.print_exc()
             self.window.album_grid.show_error(
-                "Error Renaming Album",
-                f"An unexpected error occurred:\n\n{str(e)}"
+                "Error Renaming Album", f"An unexpected error occurred:\n\n{str(e)}"
             )
-
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -346,7 +345,7 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Photo Album Organizer - Organize and browse photo albums",
         epilog="Configuration can be provided via a TOML file (see --config) or CLI arguments. "
-               "CLI arguments take precedence over config file settings."
+        "CLI arguments take precedence over config file settings.",
     )
 
     parser.add_argument(
@@ -354,28 +353,28 @@ def parse_arguments() -> argparse.Namespace:
         type=Path,
         default=None,
         help="Path to configuration file (TOML format). If not specified, searches default locations: "
-             "./config.toml, ~/.config/photo-organizer/config.toml, /etc/photo-organizer/config.toml"
+        "./config.toml, ~/.config/photo-organizer/config.toml, /etc/photo-organizer/config.toml",
     )
 
     parser.add_argument(
         "--photo-dir",
         type=Path,
         default=None,
-        help="Root directory containing photo albums (overrides config file)"
+        help="Root directory containing photo albums (overrides config file)",
     )
 
     parser.add_argument(
         "--state-file",
         type=Path,
         default=None,
-        help="Path to state file for persistent data (default: data/app_state.json)"
+        help="Path to state file for persistent data (default: data/app_state.json)",
     )
 
     parser.add_argument(
         "--cache-dir",
         type=Path,
         default=None,
-        help="Directory for thumbnail cache (default: data/thumbnails)"
+        help="Directory for thumbnail cache (default: data/thumbnails)",
     )
 
     parser.add_argument(
@@ -383,33 +382,33 @@ def parse_arguments() -> argparse.Namespace:
         type=str,
         default=None,
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        help="Logging level (default: INFO)"
+        help="Logging level (default: INFO)",
     )
 
     parser.add_argument(
         "--log-file",
         type=Path,
         default=None,
-        help="Path to log file (default: no file logging)"
+        help="Path to log file (default: no file logging)",
     )
 
     parser.add_argument(
         "--create-config",
         type=Path,
         metavar="PATH",
-        help="Create an example configuration file at the specified path and exit"
+        help="Create an example configuration file at the specified path and exit",
     )
 
     parser.add_argument(
-        "--version",
-        action="version",
-        version="Photo Album Organizer v0.8.0"
+        "--version", action="version", version="Photo Album Organizer v0.8.0"
     )
 
     return parser.parse_args()
 
 
-def merge_config_and_args(config: Optional[AppConfig], args: argparse.Namespace) -> AppConfig:
+def merge_config_and_args(
+    config: Optional[AppConfig], args: argparse.Namespace
+) -> AppConfig:
     """Merge configuration file and command-line arguments.
 
     CLI arguments take precedence over config file settings.
@@ -457,7 +456,7 @@ def merge_config_and_args(config: Optional[AppConfig], args: argparse.Namespace)
         state_file=state_file,
         cache_dir=cache_dir,
         log_level=log_level,
-        log_file=log_file
+        log_file=log_file,
     )
 
     # Validate
@@ -471,7 +470,6 @@ def merge_config_and_args(config: Optional[AppConfig], args: argparse.Namespace)
 def main():
     """Main entry point."""
     qt_app = None
-    window = None
 
     try:
         # Parse arguments
@@ -487,7 +485,7 @@ def main():
         try:
             config = ConfigLoader.load_config(args.config)
             if config:
-                print(f"Loaded configuration from file")
+                print("Loaded configuration from file")
         except ValueError as e:
             print(f"Error loading config file: {e}", file=sys.stderr)
             sys.exit(1)
@@ -503,13 +501,15 @@ def main():
         setup_logging(
             log_level=final_config.log_level,
             log_file=final_config.log_file,
-            console=True
+            console=True,
         )
 
-        logger.info(f"Photo Album Organizer v0.8.0")
+        logger.info("Photo Album Organizer v0.8.0")
         logger.info(f"Photo directory: {final_config.photo_dir}")
         if config:
-            logger.info("Configuration loaded from file (CLI arguments take precedence)")
+            logger.info(
+                "Configuration loaded from file (CLI arguments take precedence)"
+            )
 
         # Create QApplication
         qt_app = QApplication(sys.argv)
@@ -519,10 +519,13 @@ def main():
         # Validate photo directory before creating app
         if not final_config.photo_dir.exists() or not final_config.photo_dir.is_dir():
             from PyQt6.QtWidgets import QMessageBox
+
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Icon.Critical)
             msg.setWindowTitle("Photo Directory Unavailable")
-            msg.setText(f"The photo directory is not accessible:\n\n{final_config.photo_dir}")
+            msg.setText(
+                f"The photo directory is not accessible:\n\n{final_config.photo_dir}"
+            )
             msg.setInformativeText(
                 "Please ensure:\n"
                 "• The directory exists\n"
@@ -536,7 +539,7 @@ def main():
         app = PhotoOrganizerApp(
             photo_dir=final_config.photo_dir,
             state_file=final_config.state_file,
-            cache_dir=final_config.cache_dir
+            cache_dir=final_config.cache_dir,
         )
 
         app.run(qt_app)
@@ -546,6 +549,7 @@ def main():
         logger.error(f"Photo directory validation error: {e}")
         if qt_app:
             from PyQt6.QtWidgets import QMessageBox
+
             QMessageBox.critical(None, "Error", str(e))
         sys.exit(1)
 
@@ -558,10 +562,11 @@ def main():
         logger.exception(f"Unexpected error: {e}")
         if qt_app:
             from PyQt6.QtWidgets import QMessageBox
+
             QMessageBox.critical(
                 None,
                 "Unexpected Error",
-                f"An unexpected error occurred:\n\n{str(e)}\n\nSee logs for details."
+                f"An unexpected error occurred:\n\n{str(e)}\n\nSee logs for details.",
             )
         sys.exit(1)
 

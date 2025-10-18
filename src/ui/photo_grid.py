@@ -5,9 +5,16 @@ Supports RAW-JPEG deduplication, selection, and lightbox viewing.
 """
 
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QLabel,
-    QRubberBand, QApplication, QMenu, QDialog, QDialogButtonBox,
-    QListView, QMessageBox
+    QWidget,
+    QVBoxLayout,
+    QListWidget,
+    QListWidgetItem,
+    QLabel,
+    QRubberBand,
+    QMenu,
+    QDialog,
+    QDialogButtonBox,
+    QMessageBox,
 )
 from PyQt6.QtCore import Qt, QSize, QRect, QPoint, pyqtSignal
 from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor, QAction
@@ -40,7 +47,7 @@ class PhotoGrid(QWidget):
         self,
         parent=None,
         on_photo_click: Optional[Callable] = None,
-        on_photo_double_click: Optional[Callable] = None
+        on_photo_double_click: Optional[Callable] = None,
     ):
         """Initialize photo grid view.
 
@@ -94,9 +101,7 @@ class PhotoGrid(QWidget):
         self.list_widget.setWordWrap(False)
 
         # Enable multi-selection
-        self.list_widget.setSelectionMode(
-            QListWidget.SelectionMode.ExtendedSelection
-        )
+        self.list_widget.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
 
         # Enable grid flow
         self.list_widget.setFlow(QListWidget.Flow.LeftToRight)
@@ -206,13 +211,17 @@ class PhotoGrid(QWidget):
                     if not pixmap.isNull():
                         # Scale to fit icon size
                         scaled = pixmap.scaled(
-                            140, 140,
+                            140,
+                            140,
                             Qt.AspectRatioMode.KeepAspectRatio,
-                            Qt.TransformationMode.SmoothTransformation
+                            Qt.TransformationMode.SmoothTransformation,
                         )
 
                         # Add RAW badge if this is a pair
-                        if isinstance(photo_or_pair, PhotoPair) and photo_or_pair.has_raw:
+                        if (
+                            isinstance(photo_or_pair, PhotoPair)
+                            and photo_or_pair.has_raw
+                        ):
                             scaled = self._add_raw_badge(scaled)
 
                         item.setIcon(QIcon(scaled))
@@ -260,11 +269,13 @@ class PhotoGrid(QWidget):
         """
         # Import here to avoid circular dependency
         from pathlib import Path as PathLib
+
         cache_dir = PathLib.cwd() / "data" / "thumbnails"
 
         if isinstance(photo_or_pair, PhotoPair):
             # Use JPEG thumbnail for pairs - compute cache path
             from ..utils.thumbnail_cache import ThumbnailCache
+
             cache = ThumbnailCache(cache_dir)
             return cache.get(photo_or_pair.display_path, (150, 150))
         elif isinstance(photo_or_pair, Photo):
@@ -272,6 +283,7 @@ class PhotoGrid(QWidget):
             if photo_or_pair.thumbnail_path:
                 return photo_or_pair.thumbnail_path
             from ..utils.thumbnail_cache import ThumbnailCache
+
             cache = ThumbnailCache(cache_dir)
             return cache.get(photo_or_pair.path, (150, 150))
         return None
@@ -308,12 +320,9 @@ class PhotoGrid(QWidget):
         painter = QPainter(pixmap)
         painter.setPen(QColor(150, 150, 150))
         from PyQt6.QtGui import QFont
+
         painter.setFont(QFont("Arial", 10))
-        painter.drawText(
-            pixmap.rect(),
-            Qt.AlignmentFlag.AlignCenter,
-            "Loading..."
-        )
+        painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "Loading...")
         painter.end()
 
         return pixmap
@@ -330,12 +339,9 @@ class PhotoGrid(QWidget):
         painter = QPainter(pixmap)
         painter.setPen(QColor(255, 255, 255))
         from PyQt6.QtGui import QFont
+
         painter.setFont(QFont("Arial", 10))
-        painter.drawText(
-            pixmap.rect(),
-            Qt.AlignmentFlag.AlignCenter,
-            "⚠\nError"
-        )
+        painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "⚠\nError")
         painter.end()
 
         return pixmap
@@ -362,22 +368,16 @@ class PhotoGrid(QWidget):
         margin = 4
 
         badge_rect = QRect(
-            pixmap.width() - badge_width - margin,
-            margin,
-            badge_width,
-            badge_height
+            pixmap.width() - badge_width - margin, margin, badge_width, badge_height
         )
 
         painter.fillRect(badge_rect, QColor(255, 140, 0, 200))  # Orange
 
         painter.setPen(Qt.GlobalColor.white)
         from PyQt6.QtGui import QFont
+
         painter.setFont(QFont("Arial", 8, QFont.Weight.Bold))
-        painter.drawText(
-            badge_rect,
-            Qt.AlignmentFlag.AlignCenter,
-            "RAW"
-        )
+        painter.drawText(badge_rect, Qt.AlignmentFlag.AlignCenter, "RAW")
 
         painter.end()
 
@@ -397,7 +397,9 @@ class PhotoGrid(QWidget):
         Returns:
             List of selected Photo or PhotoPair objects
         """
-        return [self._photos[i] for i in self._selected_indices if i < len(self._photos)]
+        return [
+            self._photos[i] for i in self._selected_indices if i < len(self._photos)
+        ]
 
     def get_selected_indices(self) -> List[int]:
         """Get indices of selected photos.
@@ -450,9 +452,10 @@ class PhotoGrid(QWidget):
                 pixmap = QPixmap(str(thumbnail_path))
                 if not pixmap.isNull():
                     scaled = pixmap.scaled(
-                        140, 140,
+                        140,
+                        140,
                         Qt.AspectRatioMode.KeepAspectRatio,
-                        Qt.TransformationMode.SmoothTransformation
+                        Qt.TransformationMode.SmoothTransformation,
                     )
 
                     # Add RAW badge if needed
@@ -574,17 +577,22 @@ class PhotoGrid(QWidget):
             Selected Album or None if cancelled
         """
         # Filter out current album from available albums
-        available = [
-            album for album in self._available_albums
-            if album.path != self._album.path
-        ] if self._album else self._available_albums
+        available = (
+            [
+                album
+                for album in self._available_albums
+                if album.path != self._album.path
+            ]
+            if self._album
+            else self._available_albums
+        )
 
         if not available:
             QMessageBox.warning(
                 self,
                 "No Albums Available",
                 "There are no other albums to move photos to.\n\n"
-                "Create another album first."
+                "Create another album first.",
             )
             return None
 
@@ -597,7 +605,9 @@ class PhotoGrid(QWidget):
         layout = QVBoxLayout(dialog)
 
         # Instructions
-        label = QLabel(f"Select album to move {len(self._selected_indices)} photo(s) to:")
+        label = QLabel(
+            f"Select album to move {len(self._selected_indices)} photo(s) to:"
+        )
         layout.addWidget(label)
 
         # Album list
@@ -613,8 +623,7 @@ class PhotoGrid(QWidget):
 
         # Buttons
         buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok |
-            QDialogButtonBox.StandardButton.Cancel
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)

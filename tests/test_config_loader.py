@@ -4,7 +4,6 @@ Tests the config_loader module's ability to load and validate TOML configuration
 """
 
 import pytest
-import tempfile
 import tomllib
 from pathlib import Path
 
@@ -19,7 +18,7 @@ class TestAppConfig:
         config = AppConfig(
             photo_dir=Path("~/Pictures"),
             state_file=Path("~/data/state.json"),
-            log_file=Path("~/logs/app.log")
+            log_file=Path("~/logs/app.log"),
         )
 
         # Paths should be expanded
@@ -29,10 +28,7 @@ class TestAppConfig:
 
     def test_string_to_path_conversion(self):
         """Test that string paths are converted to Path objects."""
-        config = AppConfig(
-            photo_dir="/tmp/photos",
-            state_file="/tmp/state.json"
-        )
+        config = AppConfig(photo_dir="/tmp/photos", state_file="/tmp/state.json")
 
         assert isinstance(config.photo_dir, Path)
         assert isinstance(config.state_file, Path)
@@ -48,10 +44,7 @@ class TestAppConfig:
 
     def test_validation_invalid_log_level(self, tmp_path):
         """Test validation fails for invalid log level."""
-        config = AppConfig(
-            photo_dir=tmp_path,
-            log_level="INVALID"
-        )
+        config = AppConfig(photo_dir=tmp_path, log_level="INVALID")
 
         is_valid, error_msg = config.validate()
 
@@ -60,10 +53,7 @@ class TestAppConfig:
 
     def test_validation_success(self, tmp_path):
         """Test validation succeeds for valid config."""
-        config = AppConfig(
-            photo_dir=tmp_path,
-            log_level="DEBUG"
-        )
+        config = AppConfig(photo_dir=tmp_path, log_level="DEBUG")
 
         is_valid, error_msg = config.validate()
 
@@ -163,9 +153,7 @@ photo_dir = "/nonexistent/path"
 
         # Mock DEFAULT_CONFIG_PATHS to use test directory
         monkeypatch.setattr(
-            ConfigLoader,
-            "DEFAULT_CONFIG_PATHS",
-            [config_file, tmp_path / "other.toml"]
+            ConfigLoader, "DEFAULT_CONFIG_PATHS", [config_file, tmp_path / "other.toml"]
         )
 
         found = ConfigLoader.find_config_file()

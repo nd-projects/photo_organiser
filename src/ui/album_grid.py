@@ -5,16 +5,32 @@ Supports drag-and-drop reordering of albums.
 """
 
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QLabel,
-    QPushButton, QHBoxLayout, QMessageBox, QInputDialog, QLineEdit, QMenu
+    QWidget,
+    QVBoxLayout,
+    QListWidget,
+    QListWidgetItem,
+    QLabel,
+    QPushButton,
+    QHBoxLayout,
+    QMessageBox,
+    QInputDialog,
+    QLineEdit,
+    QMenu,
 )
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QPoint, QTimer, QRect
-from PyQt6.QtGui import QIcon, QPixmap, QDragEnterEvent, QDropEvent, QDragMoveEvent, QPainter, QColor, QPen
+from PyQt6.QtCore import Qt, QSize, pyqtSignal, QPoint
+from PyQt6.QtGui import (
+    QIcon,
+    QPixmap,
+    QDropEvent,
+    QDragMoveEvent,
+    QPainter,
+    QColor,
+    QPen,
+)
 from typing import Optional, Callable, List
 from pathlib import Path
 
 from ..models.album import Album
-from .widgets.drag_drop import DragDropHelper
 
 
 class AlbumListWidget(QListWidget):
@@ -121,7 +137,7 @@ class AlbumListWidget(QListWidget):
         Args:
             event: Drop event
         """
-        print(f"DEBUG: dropEvent called")
+        print("DEBUG: dropEvent called")
         print(f"  Ghost item exists: {self._ghost_item is not None}")
         print(f"  Dragged item exists: {self._dragged_item is not None}")
         print(f"  Source index: {self._source_index}")
@@ -132,12 +148,16 @@ class AlbumListWidget(QListWidget):
             target_index = self.row(self._ghost_item)
             print(f"  Ghost at index: {target_index}")
 
-        if target_index is not None and self._dragged_item is not None and self._source_index is not None:
+        if (
+            target_index is not None
+            and self._dragged_item is not None
+            and self._source_index is not None
+        ):
             # Store the dragged item data before any operations
             source_index = self._source_index
 
             # Remove the ghost first
-            print(f"  Removing ghost...")
+            print("  Removing ghost...")
             self._remove_ghost()
 
             # Adjust target index since we removed the ghost
@@ -154,13 +174,19 @@ class AlbumListWidget(QListWidget):
                 if source_index < self.count():
                     # Take the item from its current position
                     taken_item = self.takeItem(source_index)
-                    album = taken_item.data(Qt.ItemDataRole.UserRole) if taken_item else None
-                    print(f"  Took item: {taken_item is not None}, album: {album.name if album else 'None'}")
+                    album = (
+                        taken_item.data(Qt.ItemDataRole.UserRole)
+                        if taken_item
+                        else None
+                    )
+                    print(
+                        f"  Took item: {taken_item is not None}, album: {album.name if album else 'None'}"
+                    )
 
                     if taken_item:
                         # Verify the album data is still attached
                         if not album:
-                            print(f"  ERROR: Taken item has no album data!")
+                            print("  ERROR: Taken item has no album data!")
 
                         # Insert at the target position
                         self.insertItem(target_index, taken_item)
@@ -168,26 +194,34 @@ class AlbumListWidget(QListWidget):
 
                         # Verify after insertion
                         verify_item = self.item(target_index)
-                        verify_album = verify_item.data(Qt.ItemDataRole.UserRole) if verify_item else None
-                        print(f"  Verify: item at {target_index} has album: {verify_album.name if verify_album else 'None'}")
+                        verify_album = (
+                            verify_item.data(Qt.ItemDataRole.UserRole)
+                            if verify_item
+                            else None
+                        )
+                        print(
+                            f"  Verify: item at {target_index} has album: {verify_album.name if verify_album else 'None'}"
+                        )
 
                         # Select the moved item
                         self.setCurrentItem(taken_item)
-                        print(f"  Item moved successfully")
+                        print("  Item moved successfully")
 
                         # Emit signal that drop completed
                         self.drop_completed.emit()
                     else:
                         print(f"  ERROR: Failed to take item at index {source_index}")
                 else:
-                    print(f"  ERROR: Source index {source_index} out of range (count: {self.count()})")
+                    print(
+                        f"  ERROR: Source index {source_index} out of range (count: {self.count()})"
+                    )
             else:
-                print(f"  No move needed - same position")
+                print("  No move needed - same position")
 
             # Accept the event to prevent default handling
             event.accept()
         else:
-            print(f"  Cannot drop - missing required data")
+            print("  Cannot drop - missing required data")
             # Remove ghost if present
             self._remove_ghost()
             # Accept but don't do anything
@@ -196,7 +230,7 @@ class AlbumListWidget(QListWidget):
         # Clear state
         self._dragged_item = None
         self._source_index = None
-        print(f"  State cleared")
+        print("  State cleared")
 
     def _create_ghost_item(self) -> QListWidgetItem:
         """Create a ghost placeholder item.
@@ -213,7 +247,7 @@ class AlbumListWidget(QListWidget):
 
             # IMPORTANT: Do NOT copy album data to ghost!
             # Ghost should have NO UserRole data so it's not counted as a real album
-            print(f"  Creating ghost (no album data)")
+            print("  Creating ghost (no album data)")
 
             # Create a semi-transparent ghost icon
             original_icon = self._dragged_item.icon()
@@ -236,7 +270,9 @@ class AlbumListWidget(QListWidget):
                 painter.setOpacity(1.0)
                 painter.setPen(QPen(QColor(70, 130, 220), 2, Qt.PenStyle.DashLine))
                 painter.setBrush(Qt.BrushStyle.NoBrush)
-                painter.drawRoundedRect(ghost_pixmap.rect().adjusted(1, 1, -1, -1), 5, 5)
+                painter.drawRoundedRect(
+                    ghost_pixmap.rect().adjusted(1, 1, -1, -1), 5, 5
+                )
 
                 painter.end()
 
@@ -289,7 +325,7 @@ class AlbumListWidget(QListWidget):
                 print(f"  Ghost row invalid: {row}")
             self._ghost_item = None
         else:
-            print(f"  No ghost to remove")
+            print("  No ghost to remove")
 
 
 class AlbumGrid(QWidget):
@@ -404,7 +440,7 @@ class AlbumGrid(QWidget):
             # We handle everything in our custom dropEvent
             try:
                 self.list_widget.model().rowsMoved.disconnect()
-            except:
+            except RuntimeError:
                 pass  # No connections to disconnect
 
             # Connect to our custom drop_completed signal
@@ -505,9 +541,10 @@ class AlbumGrid(QWidget):
                     if not pixmap.isNull():
                         # Scale to fit icon size while maintaining aspect ratio
                         scaled = pixmap.scaled(
-                            180, 180,
+                            180,
+                            180,
                             Qt.AspectRatioMode.KeepAspectRatio,
-                            Qt.TransformationMode.SmoothTransformation
+                            Qt.TransformationMode.SmoothTransformation,
                         )
                         item.setIcon(QIcon(scaled))
                     else:
@@ -673,12 +710,13 @@ class AlbumGrid(QWidget):
             newest_first: Whether to show newest albums first
         """
         import datetime
+
         # Sort by date, putting None dates at the end
         self._albums.sort(
-            key=lambda a: a.date if a.date else (
-                datetime.date.min if newest_first else datetime.date.max
-            ),
-            reverse=newest_first
+            key=lambda a: a.date
+            if a.date
+            else (datetime.date.min if newest_first else datetime.date.max),
+            reverse=newest_first,
         )
         self.set_albums(self._albums)
 
@@ -734,11 +772,7 @@ class AlbumGrid(QWidget):
         painter = QPainter(pixmap)
         painter.setPen(QColor(150, 150, 150))
         painter.setFont(QFont("Arial", 10))
-        painter.drawText(
-            pixmap.rect(),
-            Qt.AlignmentFlag.AlignCenter,
-            "No Photos"
-        )
+        painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "No Photos")
         painter.end()
 
         return pixmap
@@ -757,11 +791,7 @@ class AlbumGrid(QWidget):
         painter = QPainter(pixmap)
         painter.setPen(QColor(255, 255, 255))
         painter.setFont(QFont("Arial", 10))
-        painter.drawText(
-            pixmap.rect(),
-            Qt.AlignmentFlag.AlignCenter,
-            "⚠\nError"
-        )
+        painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "⚠\nError")
         painter.end()
 
         return pixmap
@@ -771,7 +801,7 @@ class AlbumGrid(QWidget):
 
         Extracts the new album order from the list widget and emits signal.
         """
-        print(f"DEBUG: _handle_drop_complete called")
+        print("DEBUG: _handle_drop_complete called")
         print(f"DEBUG: List widget count: {self.list_widget.count()}")
 
         # Rebuild album list from current item order
@@ -780,7 +810,9 @@ class AlbumGrid(QWidget):
             item = self.list_widget.item(i)
             if item:
                 album = item.data(Qt.ItemDataRole.UserRole)
-                print(f"  Position {i}: item exists, album={album.name if album else 'None'}")
+                print(
+                    f"  Position {i}: item exists, album={album.name if album else 'None'}"
+                )
                 # Only add if it's a real album (not a ghost)
                 if album:
                     new_order.append(album)
@@ -802,7 +834,7 @@ class AlbumGrid(QWidget):
             "Revert to Chronological Order",
             "This will reset the album order to chronological (newest first). Continue?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
+            QMessageBox.StandardButton.No,
         )
 
         if reply == QMessageBox.StandardButton.Yes:
@@ -812,11 +844,7 @@ class AlbumGrid(QWidget):
         """Handle create new album button click."""
         # Show input dialog for album name
         album_name, ok = QInputDialog.getText(
-            self,
-            "Create New Album",
-            "Enter album name:",
-            QLineEdit.EchoMode.Normal,
-            ""
+            self, "Create New Album", "Enter album name:", QLineEdit.EchoMode.Normal, ""
         )
 
         if ok and album_name:
@@ -884,7 +912,7 @@ class AlbumGrid(QWidget):
             "Rename Album",
             f"Enter new name for '{album.name}':",
             QLineEdit.EchoMode.Normal,
-            album.name
+            album.name,
         )
 
         if ok and new_name:

@@ -3,15 +3,21 @@
 Displays the album grid and handles top-level UI interactions.
 """
 
-from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-                             QStatusBar, QMessageBox)
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QKeySequence, QShortcut, QScreen
+from PyQt6.QtWidgets import (
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QStatusBar,
+    QMessageBox,
+)
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QKeySequence, QShortcut
 from typing import Optional, Callable
 from pathlib import Path
 
 from ..models.album import Album
-from ..models.photo import Photo, PhotoPair
 from ..models.app_state import AppState
 from .album_grid import AlbumGrid
 from .photo_grid import PhotoGrid
@@ -58,7 +64,7 @@ class MainWindow(QMainWindow):
 
         # Load settings
         settings = app_state.load_settings()
-        self._hide_empty_albums = settings.get('hide_empty_albums', True)
+        self._hide_empty_albums = settings.get("hide_empty_albums", True)
 
         # Create UI
         self._create_widgets()
@@ -79,15 +85,13 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(header_widget)
 
         # Album grid
-        self.album_grid = AlbumGrid(
-            on_album_click=self._handle_album_click
-        )
+        self.album_grid = AlbumGrid(on_album_click=self._handle_album_click)
         main_layout.addWidget(self.album_grid, 1)  # Stretch factor 1
 
         # Photo grid (hidden initially)
         self.photo_grid = PhotoGrid(
             on_photo_click=lambda photo, idx: None,  # Handle click (future)
-            on_photo_double_click=self._handle_photo_double_click
+            on_photo_double_click=self._handle_photo_double_click,
         )
         self.photo_grid.move_photos_requested.connect(self._handle_move_photos)
         self.photo_grid.hide()
@@ -148,7 +152,9 @@ class MainWindow(QMainWindow):
 
         # Toggle for hiding empty albums (only visible in album view)
         self.hide_empty_checkbox = QCheckBox("Hide empty albums")
-        self.hide_empty_checkbox.setChecked(self._hide_empty_albums)  # Set from loaded state
+        self.hide_empty_checkbox.setChecked(
+            self._hide_empty_albums
+        )  # Set from loaded state
         self.hide_empty_checkbox.setToolTip("Hide albums with 0 photos")
         checkbox_font = self.hide_empty_checkbox.font()
         checkbox_font.setPointSize(11)
@@ -197,6 +203,7 @@ class MainWindow(QMainWindow):
         # Refresh will be triggered by the main app
         # Reset status after a short delay
         from PyQt6.QtCore import QTimer
+
         QTimer.singleShot(100, lambda: self.set_status("Ready"))
 
     def _handle_escape(self):
@@ -219,11 +226,11 @@ class MainWindow(QMainWindow):
         Args:
             state: Qt.CheckState value
         """
-        self._hide_empty_albums = (state == Qt.CheckState.Checked.value)
+        self._hide_empty_albums = state == Qt.CheckState.Checked.value
 
         # Save the preference
         settings = self.app_state.load_settings()
-        settings['hide_empty_albums'] = self._hide_empty_albums
+        settings["hide_empty_albums"] = self._hide_empty_albums
         self.app_state.save_settings(settings)
 
         # Apply the filter
@@ -239,9 +246,7 @@ class MainWindow(QMainWindow):
         try:
             # Open lightbox with all photos
             lightbox = Lightbox(
-                photos=self._current_photos,
-                current_index=index,
-                parent=self
+                photos=self._current_photos, current_index=index, parent=self
             )
             lightbox.exec()  # Modal dialog
         except Exception as e:
@@ -266,13 +271,13 @@ class MainWindow(QMainWindow):
             # Execute move
             result = photo_manager.move_photos(photo_paths, destination_album.path)
 
-            if result['success']:
+            if result["success"]:
                 # Show success message
-                moved_count = result['moved_count']
+                moved_count = result["moved_count"]
                 QMessageBox.information(
                     self,
                     "Photos Moved",
-                    f"Successfully moved {moved_count} file(s) to {destination_album.name}"
+                    f"Successfully moved {moved_count} file(s) to {destination_album.name}",
                 )
 
                 # Refresh both source and destination albums
@@ -280,22 +285,18 @@ class MainWindow(QMainWindow):
                 self._handle_back_to_albums()
 
                 # Emit signal to refresh albums (if callback is set)
-                if hasattr(self, 'on_photos_moved'):
+                if hasattr(self, "on_photos_moved"):
                     self.on_photos_moved(destination_album)
 
             else:
                 # Show error message
                 QMessageBox.critical(
-                    self,
-                    "Move Failed",
-                    f"Failed to move photos:\n\n{result['error']}"
+                    self, "Move Failed", f"Failed to move photos:\n\n{result['error']}"
                 )
 
         except Exception as e:
             QMessageBox.critical(
-                self,
-                "Error",
-                f"An error occurred while moving photos:\n\n{str(e)}"
+                self, "Error", f"An error occurred while moving photos:\n\n{str(e)}"
             )
 
     def _toggle_fullscreen(self):
@@ -354,7 +355,9 @@ class MainWindow(QMainWindow):
     def _apply_album_filter(self):
         """Apply current filter settings to albums."""
         if self._hide_empty_albums:
-            filtered_albums = [album for album in self._all_albums if album.photo_count > 0]
+            filtered_albums = [
+                album for album in self._all_albums if album.photo_count > 0
+            ]
         else:
             filtered_albums = self._all_albums
 
@@ -460,7 +463,7 @@ class MainWindow(QMainWindow):
             self,
             title,
             message,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
         return reply == QMessageBox.StandardButton.Yes
 
@@ -517,6 +520,7 @@ class MainWindow(QMainWindow):
 
         # Process events to show the overlay immediately
         from PyQt6.QtWidgets import QApplication
+
         QApplication.processEvents()
 
     def update_loading_progress(self, value: int, message: str = None):
@@ -528,9 +532,10 @@ class MainWindow(QMainWindow):
         """
         if message:
             self.set_status(message)
-            if self._loading_overlay and hasattr(self._loading_overlay, '_label'):
+            if self._loading_overlay and hasattr(self._loading_overlay, "_label"):
                 self._loading_overlay._label.setText(message)
                 from PyQt6.QtWidgets import QApplication
+
                 QApplication.processEvents()
 
     def hide_loading(self):
@@ -603,11 +608,7 @@ class MainWindow(QMainWindow):
                 f"The application will now close."
             )
 
-        QMessageBox.critical(
-            self,
-            "Photo Directory Unavailable",
-            error_message
-        )
+        QMessageBox.critical(self, "Photo Directory Unavailable", error_message)
 
     def resizeEvent(self, event):
         """Handle window resize to update overlay size.

@@ -4,7 +4,6 @@ This module handles EXIF data extraction from various image formats including
 RAW files (CR3, NEF, ARW, DNG) using rawpy and standard formats using exifread.
 """
 
-import io
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -24,10 +23,10 @@ class EXIFParser:
     """EXIF metadata parser for images."""
 
     # RAW format extensions
-    RAW_FORMATS = {'.cr3', '.nef', '.arw', '.dng', '.cr2', '.raw'}
+    RAW_FORMATS = {".cr3", ".nef", ".arw", ".dng", ".cr2", ".raw"}
 
     # Standard image formats
-    STANDARD_FORMATS = {'.jpg', '.jpeg', '.png', '.heic', '.heif'}
+    STANDARD_FORMATS = {".jpg", ".jpeg", ".png", ".heic", ".heif"}
 
     @staticmethod
     def is_raw_format(path: Path) -> bool:
@@ -95,9 +94,9 @@ class EXIFParser:
         try:
             with rawpy.imread(str(path)) as raw:
                 # Try to get DateTimeOriginal from metadata
-                if hasattr(raw, 'metadata'):
+                if hasattr(raw, "metadata"):
                     metadata = raw.metadata
-                    if hasattr(metadata, 'timestamp'):
+                    if hasattr(metadata, "timestamp"):
                         # rawpy timestamp is a datetime object
                         return metadata.timestamp
         except Exception:
@@ -119,17 +118,17 @@ class EXIFParser:
             return None
 
         try:
-            with open(path, 'rb') as f:
-                tags = exifread.process_file(f, stop_tag='DateTimeOriginal')
+            with open(path, "rb") as f:
+                tags = exifread.process_file(f, stop_tag="DateTimeOriginal")
 
                 # Try DateTimeOriginal first (when photo was taken)
-                if 'EXIF DateTimeOriginal' in tags:
-                    date_str = str(tags['EXIF DateTimeOriginal'])
+                if "EXIF DateTimeOriginal" in tags:
+                    date_str = str(tags["EXIF DateTimeOriginal"])
                     return EXIFParser._parse_exif_datetime(date_str)
 
                 # Fall back to DateTime (when file was modified)
-                if 'Image DateTime' in tags:
-                    date_str = str(tags['Image DateTime'])
+                if "Image DateTime" in tags:
+                    date_str = str(tags["Image DateTime"])
                     return EXIFParser._parse_exif_datetime(date_str)
 
         except Exception:
@@ -150,7 +149,7 @@ class EXIFParser:
             Datetime object if parsing succeeds, None otherwise
         """
         try:
-            return datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S')
+            return datetime.strptime(date_str, "%Y:%m:%d %H:%M:%S")
         except ValueError:
             return None
 
@@ -210,16 +209,16 @@ class EXIFParser:
             return None
 
         try:
-            with open(path, 'rb') as f:
-                tags = exifread.process_file(f, stop_tag='ExifImageWidth')
+            with open(path, "rb") as f:
+                tags = exifread.process_file(f, stop_tag="ExifImageWidth")
 
                 width = None
                 height = None
 
-                if 'EXIF ExifImageWidth' in tags:
-                    width = int(str(tags['EXIF ExifImageWidth']))
-                if 'EXIF ExifImageLength' in tags:
-                    height = int(str(tags['EXIF ExifImageLength']))
+                if "EXIF ExifImageWidth" in tags:
+                    width = int(str(tags["EXIF ExifImageWidth"]))
+                if "EXIF ExifImageLength" in tags:
+                    height = int(str(tags["EXIF ExifImageLength"]))
 
                 if width and height:
                     return (width, height)
@@ -240,10 +239,10 @@ class EXIFParser:
             Dictionary with available metadata fields
         """
         metadata = {
-            'path': str(path),
-            'format': path.suffix.lower(),
-            'date': EXIFParser.extract_date(path),
-            'dimensions': EXIFParser.extract_dimensions(path),
+            "path": str(path),
+            "format": path.suffix.lower(),
+            "date": EXIFParser.extract_date(path),
+            "dimensions": EXIFParser.extract_dimensions(path),
         }
 
         return metadata

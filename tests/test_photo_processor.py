@@ -6,7 +6,6 @@ Critical tests for:
 """
 
 import io
-import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 
@@ -175,7 +174,7 @@ class TestRawJpegPairDetection:
         pair = PhotoPair(
             base_name="IMG_001",
             jpeg_path=Path("/photos/IMG_001.jpg"),
-            raw_path=Path("/photos/IMG_001.cr3")
+            raw_path=Path("/photos/IMG_001.cr3"),
         )
 
         assert pair.display_path == Path("/photos/IMG_001.jpg")
@@ -187,7 +186,7 @@ class TestRawJpegPairDetection:
         pair_with_raw = PhotoPair(
             base_name="IMG_001",
             jpeg_path=Path("/photos/IMG_001.jpg"),
-            raw_path=Path("/photos/IMG_001.cr3")
+            raw_path=Path("/photos/IMG_001.cr3"),
         )
         assert len(pair_with_raw.get_all_paths()) == 2
         assert Path("/photos/IMG_001.jpg") in pair_with_raw.get_all_paths()
@@ -195,8 +194,7 @@ class TestRawJpegPairDetection:
 
         # JPEG only
         pair_jpeg_only = PhotoPair(
-            base_name="IMG_002",
-            jpeg_path=Path("/photos/IMG_002.jpg")
+            base_name="IMG_002", jpeg_path=Path("/photos/IMG_002.jpg")
         )
         assert len(pair_jpeg_only.get_all_paths()) == 1
         assert pair_jpeg_only.get_all_paths()[0] == Path("/photos/IMG_002.jpg")
@@ -205,7 +203,7 @@ class TestRawJpegPairDetection:
 class TestRawPreviewExtraction:
     """Test embedded RAW preview extraction."""
 
-    @patch('src.services.photo_processor.rawpy')
+    @patch("src.services.photo_processor.rawpy")
     def test_extract_raw_preview_with_embedded_jpeg(self, mock_rawpy, photo_processor):
         """Test extraction of embedded JPEG preview from RAW file."""
         # Create a fake JPEG preview
@@ -233,7 +231,7 @@ class TestRawPreviewExtraction:
         assert isinstance(result, Image.Image)
         mock_rawpy.imread.assert_called_once()
 
-    @patch('src.services.photo_processor.rawpy')
+    @patch("src.services.photo_processor.rawpy")
     def test_extract_raw_preview_fallback_to_decode(self, mock_rawpy, photo_processor):
         """Test fallback to full RAW decode when preview extraction fails."""
         import numpy as np
@@ -259,11 +257,11 @@ class TestRawPreviewExtraction:
 
     def test_extract_raw_preview_without_rawpy(self, photo_processor):
         """Test that RAW extraction fails gracefully without rawpy."""
-        with patch('src.services.photo_processor.rawpy', None):
+        with patch("src.services.photo_processor.rawpy", None):
             with pytest.raises(ImportError, match="rawpy is required"):
                 photo_processor._extract_raw_preview(Path("/photos/test.cr3"))
 
-    @patch('src.services.photo_processor.rawpy')
+    @patch("src.services.photo_processor.rawpy")
     def test_load_image_for_thumbnail_raw_format(self, mock_rawpy, photo_processor):
         """Test that _load_image_for_thumbnail calls RAW extraction for RAW files."""
         # Setup mock
@@ -284,11 +282,15 @@ class TestRawPreviewExtraction:
         mock_rawpy.ThumbFormat.JPEG = MagicMock()
 
         # Test various RAW formats
-        for ext in ['.cr3', '.cr2', '.nef', '.arw', '.dng', '.raw']:
-            result = photo_processor._load_image_for_thumbnail(Path(f"/photos/test{ext}"))
+        for ext in [".cr3", ".cr2", ".nef", ".arw", ".dng", ".raw"]:
+            result = photo_processor._load_image_for_thumbnail(
+                Path(f"/photos/test{ext}")
+            )
             assert isinstance(result, Image.Image)
 
-    def test_load_image_for_thumbnail_standard_format(self, photo_processor, sample_photos):
+    def test_load_image_for_thumbnail_standard_format(
+        self, photo_processor, sample_photos
+    ):
         """Test that _load_image_for_thumbnail uses PIL for standard formats."""
         jpeg_path = sample_photos / "IMG_001.jpg"
         result = photo_processor._load_image_for_thumbnail(jpeg_path)
@@ -327,7 +329,7 @@ class TestPhotoProcessorIntegration:
             assert thumb.size[0] <= 50
             assert thumb.size[1] <= 50
 
-    @patch('src.services.photo_processor.rawpy')
+    @patch("src.services.photo_processor.rawpy")
     def test_generate_thumbnail_for_raw(self, mock_rawpy, photo_processor, tmp_path):
         """Test thumbnail generation for RAW file."""
         # Create mock RAW file

@@ -6,7 +6,6 @@ Includes event debouncing to avoid excessive updates during bulk operations.
 """
 
 import threading
-import time
 from pathlib import Path
 from typing import Callable, List, Optional
 
@@ -49,7 +48,7 @@ class PhotoDirectoryHandler(FileSystemEventHandler):
         # Ignore directory events for now, focus on files
         if event.is_directory:
             # But do handle directory creation/deletion (new albums)
-            if event.event_type not in ['created', 'deleted', 'moved']:
+            if event.event_type not in ["created", "deleted", "moved"]:
                 return
 
         with self.lock:
@@ -61,8 +60,7 @@ class PhotoDirectoryHandler(FileSystemEventHandler):
                 self.timer.cancel()
 
             self.timer = threading.Timer(
-                self.debounce_ms / 1000.0,
-                self._process_events
+                self.debounce_ms / 1000.0, self._process_events
             )
             self.timer.start()
 
@@ -98,7 +96,9 @@ class FilesystemWatcher:
     when photos are added, removed, or modified externally.
     """
 
-    def __init__(self, root_dir: Path, callback: Callable[[List], None], debounce_ms: int = 500):
+    def __init__(
+        self, root_dir: Path, callback: Callable[[List], None], debounce_ms: int = 500
+    ):
         """Initialize filesystem watcher.
 
         Args:
@@ -136,11 +136,7 @@ class FilesystemWatcher:
                 self.handler = PhotoDirectoryHandler(self.callback, self.debounce_ms)
 
                 # Schedule watching
-                self.observer.schedule(
-                    self.handler,
-                    str(self.root_dir),
-                    recursive=True
-                )
+                self.observer.schedule(self.handler, str(self.root_dir), recursive=True)
 
             self.observer.start()
             self._running = True
@@ -182,9 +178,7 @@ class FilesystemWatcher:
 
 
 def create_watcher(
-    root_dir: Path,
-    callback: Callable[[List], None],
-    debounce_ms: int = 500
+    root_dir: Path, callback: Callable[[List], None], debounce_ms: int = 500
 ) -> FilesystemWatcher:
     """Create and start a filesystem watcher.
 

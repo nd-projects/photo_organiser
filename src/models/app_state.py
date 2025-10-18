@@ -62,9 +62,9 @@ class AppState:
             return []
 
         try:
-            with open(self.state_file, 'r') as f:
+            with open(self.state_file, "r") as f:
                 data = json.load(f)
-                return data.get('album_order', [])
+                return data.get("album_order", [])
         except (json.JSONDecodeError, IOError) as e:
             # Log error but don't crash - return empty order
             print(f"Warning: Could not load album order from {self.state_file}: {e}")
@@ -76,17 +76,15 @@ class AppState:
         Returns:
             Dictionary of settings. Returns defaults if file doesn't exist or is invalid.
         """
-        defaults = {
-            'hide_empty_albums': True
-        }
+        defaults = {"hide_empty_albums": True}
 
         if not self.state_file.exists():
             return defaults
 
         try:
-            with open(self.state_file, 'r') as f:
+            with open(self.state_file, "r") as f:
                 data = json.load(f)
-                return data.get('settings', defaults)
+                return data.get("settings", defaults)
         except (json.JSONDecodeError, IOError) as e:
             print(f"Warning: Could not load settings from {self.state_file}: {e}")
             return defaults
@@ -104,19 +102,19 @@ class AppState:
         existing_data = {}
         if self.state_file.exists():
             try:
-                with open(self.state_file, 'r') as f:
+                with open(self.state_file, "r") as f:
                     existing_data = json.load(f)
             except (json.JSONDecodeError, IOError):
                 pass  # Use empty dict if can't load
 
         # Update settings
-        existing_data['settings'] = settings
-        if 'version' not in existing_data:
-            existing_data['version'] = '1.0'
+        existing_data["settings"] = settings
+        if "version" not in existing_data:
+            existing_data["version"] = "1.0"
 
         # Write to file
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.state_file, 'w') as f:
+        with open(self.state_file, "w") as f:
             json.dump(existing_data, f, indent=2)
 
     def save_album_order(self, album_order: list[dict]) -> None:
@@ -133,16 +131,13 @@ class AppState:
 
         # Update timestamps for all entries
         for entry in album_order:
-            entry['updated_at'] = datetime.now().isoformat()
+            entry["updated_at"] = datetime.now().isoformat()
 
         # Create state data structure
-        state_data = {
-            'version': '1.0',
-            'album_order': album_order
-        }
+        state_data = {"version": "1.0", "album_order": album_order}
 
         # Write to file with pretty formatting
-        with open(self.state_file, 'w') as f:
+        with open(self.state_file, "w") as f:
             json.dump(state_data, f, indent=2)
 
     def get_album_order_map(self) -> dict[str, int]:
@@ -152,9 +147,11 @@ class AppState:
             Dictionary mapping album_path (str) to sort_index (int)
         """
         album_order = self.load_album_order()
-        return {entry['album_path']: entry['sort_index'] for entry in album_order}
+        return {entry["album_path"]: entry["sort_index"] for entry in album_order}
 
-    def update_album_order(self, album_path: str, sort_index: int, metadata: dict = None) -> None:
+    def update_album_order(
+        self, album_path: str, sort_index: int, metadata: dict = None
+    ) -> None:
         """Update or insert a single album's order.
 
         Args:
@@ -167,23 +164,25 @@ class AppState:
         # Find existing entry
         existing_entry = None
         for entry in album_order:
-            if entry['album_path'] == album_path:
+            if entry["album_path"] == album_path:
                 existing_entry = entry
                 break
 
         if existing_entry:
             # Update existing
-            existing_entry['sort_index'] = sort_index
+            existing_entry["sort_index"] = sort_index
             if metadata is not None:
-                existing_entry['metadata'] = metadata
+                existing_entry["metadata"] = metadata
         else:
             # Insert new entry
-            album_order.append({
-                'album_path': album_path,
-                'sort_index': sort_index,
-                'metadata': metadata or {},
-                'updated_at': datetime.now().isoformat()
-            })
+            album_order.append(
+                {
+                    "album_path": album_path,
+                    "sort_index": sort_index,
+                    "metadata": metadata or {},
+                    "updated_at": datetime.now().isoformat(),
+                }
+            )
 
         # Save updated order
         self.save_album_order(album_order)
@@ -195,7 +194,9 @@ class AppState:
             album_path: Absolute path to album directory
         """
         album_order = self.load_album_order()
-        album_order = [entry for entry in album_order if entry['album_path'] != album_path]
+        album_order = [
+            entry for entry in album_order if entry["album_path"] != album_path
+        ]
         self.save_album_order(album_order)
 
 
@@ -211,9 +212,9 @@ def load_album_order(state_file: Path) -> list[dict]:
     if not state_file.exists():
         return []
 
-    with open(state_file, 'r') as f:
+    with open(state_file, "r") as f:
         data = json.load(f)
-        return data.get('album_order', [])
+        return data.get("album_order", [])
 
 
 def save_album_order(state_file: Path, album_order: list[dict]) -> None:
@@ -225,10 +226,7 @@ def save_album_order(state_file: Path, album_order: list[dict]) -> None:
     """
     state_file.parent.mkdir(parents=True, exist_ok=True)
 
-    data = {
-        'version': '1.0',
-        'album_order': album_order
-    }
+    data = {"version": "1.0", "album_order": album_order}
 
-    with open(state_file, 'w') as f:
+    with open(state_file, "w") as f:
         json.dump(data, f, indent=2)

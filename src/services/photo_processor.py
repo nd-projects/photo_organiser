@@ -44,9 +44,7 @@ class PhotoProcessor:
         self.cache = ThumbnailCache(cache_dir)
 
     def generate_thumbnail(
-        self,
-        source_path: Path,
-        size: Tuple[int, int] = PHOTO_TILE_SIZE
+        self, source_path: Path, size: Tuple[int, int] = PHOTO_TILE_SIZE
     ) -> Optional[Path]:
         """Generate and cache a thumbnail for an image.
 
@@ -93,7 +91,7 @@ class PhotoProcessor:
         """
         suffix = path.suffix.lower()
 
-        if suffix in ['.cr3', '.cr2', '.nef', '.arw', '.dng', '.raw']:
+        if suffix in [".cr3", ".cr2", ".nef", ".arw", ".dng", ".raw"]:
             # RAW format - use rawpy
             return self._extract_raw_preview(path)
         else:
@@ -142,10 +140,7 @@ class PhotoProcessor:
         """
         return PhotoPair.detect_pairs(photos)
 
-    def generate_album_preview(
-        self,
-        first_photo_path: Path
-    ) -> Optional[Path]:
+    def generate_album_preview(self, first_photo_path: Path) -> Optional[Path]:
         """Generate album preview thumbnail from first photo.
 
         Args:
@@ -166,7 +161,7 @@ class PhotoProcessor:
             Tuple of (width, height) or None
         """
         try:
-            if path.suffix.lower() in ['.cr3', '.cr2', '.nef', '.arw', '.dng', '.raw']:
+            if path.suffix.lower() in [".cr3", ".cr2", ".nef", ".arw", ".dng", ".raw"]:
                 return self._get_raw_dimensions(path)
             else:
                 with Image.open(path) as img:
@@ -211,9 +206,7 @@ class PhotoProcessor:
             return True
 
     def invalidate_thumbnail(
-        self,
-        source_path: Path,
-        size: Optional[Tuple[int, int]] = None
+        self, source_path: Path, size: Optional[Tuple[int, int]] = None
     ) -> None:
         """Invalidate cached thumbnail for a photo.
 

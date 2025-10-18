@@ -33,7 +33,7 @@ class PhotoTile(QWidget):
         photo: Optional[Photo] = None,
         photo_pair: Optional[PhotoPair] = None,
         size: QSize = QSize(150, 150),
-        parent=None
+        parent=None,
     ):
         """Initialize photo tile.
 
@@ -76,7 +76,9 @@ class PhotoTile(QWidget):
         self.thumbnail_label = QLabel()
         self.thumbnail_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.thumbnail_label.setScaledContents(False)
-        self.thumbnail_label.setMinimumSize(self.tile_size.width() - 8, self.tile_size.height() - 8)
+        self.thumbnail_label.setMinimumSize(
+            self.tile_size.width() - 8, self.tile_size.height() - 8
+        )
 
         # Default placeholder
         self._set_placeholder()
@@ -92,11 +94,7 @@ class PhotoTile(QWidget):
         painter = QPainter(pixmap)
         painter.setPen(QColor(150, 150, 150))
         painter.setFont(QFont("Arial", 10))
-        painter.drawText(
-            pixmap.rect(),
-            Qt.AlignmentFlag.AlignCenter,
-            "Loading..."
-        )
+        painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "Loading...")
         painter.end()
 
         self.thumbnail_label.setPixmap(pixmap)
@@ -138,7 +136,7 @@ class PhotoTile(QWidget):
                 self.tile_size.width() - 8,
                 self.tile_size.height() - 8,
                 Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation
+                Qt.TransformationMode.SmoothTransformation,
             )
             self.thumbnail_label.setPixmap(scaled)
             self._thumbnail_loaded = True
@@ -172,19 +170,17 @@ class PhotoTile(QWidget):
             badged.width() - badge_width - margin,
             margin,
             -margin,
-            -badged.height() + badge_height + margin
+            -badged.height() + badge_height + margin,
         )
 
-        painter.fillRect(badge_rect, QColor(255, 140, 0, 200))  # Orange with transparency
+        painter.fillRect(
+            badge_rect, QColor(255, 140, 0, 200)
+        )  # Orange with transparency
 
         # Badge text
         painter.setPen(Qt.GlobalColor.white)
         painter.setFont(QFont("Arial", 8, QFont.Weight.Bold))
-        painter.drawText(
-            badge_rect,
-            Qt.AlignmentFlag.AlignCenter,
-            "RAW"
-        )
+        painter.drawText(badge_rect, Qt.AlignmentFlag.AlignCenter, "RAW")
 
         painter.end()
 

@@ -41,7 +41,7 @@ class ThumbnailCache:
             Hex digest of SHA-256 hash
         """
         path_str = str(source_path.resolve())
-        return hashlib.sha256(path_str.encode('utf-8')).hexdigest()
+        return hashlib.sha256(path_str.encode("utf-8")).hexdigest()
 
     def get_cache_path(self, source_path: Path, size: tuple[int, int]) -> Path:
         """Get the cache file path for a given source and size.
@@ -113,7 +113,9 @@ class ThumbnailCache:
         """
         return self.get_cache_path(source_path, size)
 
-    def invalidate(self, source_path: Path, size: Optional[tuple[int, int]] = None) -> None:
+    def invalidate(
+        self, source_path: Path, size: Optional[tuple[int, int]] = None
+    ) -> None:
         """Remove cached thumbnail(s) for a source file.
 
         Args:
@@ -175,7 +177,7 @@ class ThumbnailCache:
                 pass
 
         return {
-            'count': count,
-            'size_bytes': total_size,
-            'size_mb': round(total_size / (1024 * 1024), 2)
+            "count": count,
+            "size_bytes": total_size,
+            "size_mb": round(total_size / (1024 * 1024), 2),
         }

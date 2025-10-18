@@ -22,10 +22,10 @@ class PhotoManager:
     """
 
     # Supported RAW formats
-    RAW_FORMATS = {'.cr3', '.cr2', '.nef', '.arw', '.dng', '.raw'}
+    RAW_FORMATS = {".cr3", ".cr2", ".nef", ".arw", ".dng", ".raw"}
 
     # Supported image formats
-    IMAGE_FORMATS = {'.jpg', '.jpeg', '.png', '.heic', '.bmp'} | RAW_FORMATS
+    IMAGE_FORMATS = {".jpg", ".jpeg", ".png", ".heic", ".bmp"} | RAW_FORMATS
 
     def __init__(self, scanner: FilesystemScanner):
         """Initialize PhotoManager.
@@ -56,13 +56,15 @@ class PhotoManager:
                 - moved_files: list[Path] - List of successfully moved files
         """
         # Validate inputs
-        validation_result = self._validate_move_operation(photo_paths, destination_album)
-        if not validation_result['valid']:
+        validation_result = self._validate_move_operation(
+            photo_paths, destination_album
+        )
+        if not validation_result["valid"]:
             return {
-                'success': False,
-                'moved_count': 0,
-                'error': validation_result['error'],
-                'moved_files': []
+                "success": False,
+                "moved_count": 0,
+                "error": validation_result["error"],
+                "moved_files": [],
             }
 
         # Detect pairs and build complete file list
@@ -70,18 +72,20 @@ class PhotoManager:
 
         # Check for conflicts in destination
         conflict_result = self._check_conflicts(files_to_move, destination_album)
-        if not conflict_result['no_conflicts']:
+        if not conflict_result["no_conflicts"]:
             return {
-                'success': False,
-                'moved_count': 0,
-                'error': conflict_result['error'],
-                'moved_files': []
+                "success": False,
+                "moved_count": 0,
+                "error": conflict_result["error"],
+                "moved_files": [],
             }
 
         # Execute atomic move with rollback capability
         return self._execute_atomic_move(files_to_move, destination_album)
 
-    def _validate_move_operation(self, photo_paths: list[Path], destination_album: Path) -> dict:
+    def _validate_move_operation(
+        self, photo_paths: list[Path], destination_album: Path
+    ) -> dict:
         """Validate move operation inputs.
 
         Args:
@@ -93,24 +97,33 @@ class PhotoManager:
         """
         # Check for empty list
         if not photo_paths:
-            return {'valid': False, 'error': 'No photos selected to move'}
+            return {"valid": False, "error": "No photos selected to move"}
 
         # Check destination exists
         if not destination_album.exists():
-            return {'valid': False, 'error': f'Destination album does not exist: {destination_album}'}
+            return {
+                "valid": False,
+                "error": f"Destination album does not exist: {destination_album}",
+            }
 
         if not destination_album.is_dir():
-            return {'valid': False, 'error': f'Destination is not a directory: {destination_album}'}
+            return {
+                "valid": False,
+                "error": f"Destination is not a directory: {destination_album}",
+            }
 
         # Check all source files exist
         for photo_path in photo_paths:
             if not photo_path.exists():
-                return {'valid': False, 'error': f'Source file does not exist: {photo_path}'}
+                return {
+                    "valid": False,
+                    "error": f"Source file does not exist: {photo_path}",
+                }
 
             if not photo_path.is_file():
-                return {'valid': False, 'error': f'Source is not a file: {photo_path}'}
+                return {"valid": False, "error": f"Source is not a file: {photo_path}"}
 
-        return {'valid': True, 'error': None}
+        return {"valid": True, "error": None}
 
     def _detect_and_expand_pairs(self, photo_paths: list[Path]) -> list[Path]:
         """Detect RAW-JPEG pairs and expand file list to include both files.
@@ -145,13 +158,13 @@ class PhotoManager:
 
             if extension in self.RAW_FORMATS:
                 # RAW file selected - look for JPEG pair
-                for jpeg_ext in ['.jpg', '.jpeg']:
+                for jpeg_ext in [".jpg", ".jpeg"]:
                     jpeg_pair = parent_dir / f"{base_name}{jpeg_ext}"
                     if jpeg_pair.exists() and jpeg_pair not in files_to_move:
                         files_to_move.append(jpeg_pair)
                         break
 
-            elif extension in {'.jpg', '.jpeg'}:
+            elif extension in {".jpg", ".jpeg"}:
                 # JPEG file selected - look for RAW pair
                 for raw_ext in self.RAW_FORMATS:
                     raw_pair = parent_dir / f"{base_name}{raw_ext}"
@@ -161,7 +174,9 @@ class PhotoManager:
 
         return files_to_move
 
-    def _check_conflicts(self, files_to_move: list[Path], destination_album: Path) -> dict:
+    def _check_conflicts(
+        self, files_to_move: list[Path], destination_album: Path
+    ) -> dict:
         """Check for filename conflicts in destination.
 
         Args:
@@ -176,13 +191,15 @@ class PhotoManager:
 
             if dest_path.exists():
                 return {
-                    'no_conflicts': False,
-                    'error': f'File already exists in destination: {file_path.name}'
+                    "no_conflicts": False,
+                    "error": f"File already exists in destination: {file_path.name}",
                 }
 
-        return {'no_conflicts': True, 'error': None}
+        return {"no_conflicts": True, "error": None}
 
-    def _execute_atomic_move(self, files_to_move: list[Path], destination_album: Path) -> dict:
+    def _execute_atomic_move(
+        self, files_to_move: list[Path], destination_album: Path
+    ) -> dict:
         """Execute atomic move operation with rollback on failure.
 
         Strategy:
@@ -210,10 +227,10 @@ class PhotoManager:
 
             # Success - all files moved
             return {
-                'success': True,
-                'moved_count': len(moved_files),
-                'error': None,
-                'moved_files': [dest for _, dest in moved_files]
+                "success": True,
+                "moved_count": len(moved_files),
+                "error": None,
+                "moved_files": [dest for _, dest in moved_files],
             }
 
         except Exception as e:
@@ -221,10 +238,10 @@ class PhotoManager:
             self._rollback_moves(moved_files)
 
             return {
-                'success': False,
-                'moved_count': 0,
-                'error': f'Move operation failed: {str(e)}',
-                'moved_files': []
+                "success": False,
+                "moved_count": 0,
+                "error": f"Move operation failed: {str(e)}",
+                "moved_files": [],
             }
 
     def _rollback_moves(self, moved_files: list[tuple[Path, Path]]):
@@ -257,12 +274,12 @@ class PhotoManager:
 
         if extension in self.RAW_FORMATS:
             # Look for JPEG pair
-            for jpeg_ext in ['.jpg', '.jpeg']:
+            for jpeg_ext in [".jpg", ".jpeg"]:
                 jpeg_pair = parent_dir / f"{base_name}{jpeg_ext}"
                 if jpeg_pair.exists():
                     return jpeg_pair
 
-        elif extension in {'.jpg', '.jpeg'}:
+        elif extension in {".jpg", ".jpeg"}:
             # Look for RAW pair
             for raw_ext in self.RAW_FORMATS:
                 raw_pair = parent_dir / f"{base_name}{raw_ext}"

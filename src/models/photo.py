@@ -46,7 +46,7 @@ class Photo:
 
         # Set format if not provided
         if not self.format:
-            self.format = self.path.suffix.lower().lstrip('.')
+            self.format = self.path.suffix.lower().lstrip(".")
 
         # Set size if not provided and file exists
         if self.size_bytes == 0 and self.path.exists():
@@ -71,7 +71,7 @@ class Photo:
         Returns:
             True if file is RAW format
         """
-        raw_formats = {'cr3', 'cr2', 'nef', 'arw', 'dng', 'raw'}
+        raw_formats = {"cr3", "cr2", "nef", "arw", "dng", "raw"}
         return self.format in raw_formats
 
     @property
@@ -104,15 +104,17 @@ class Photo:
         metadata = exif_parser.extract_all(self.path)
 
         # Update our attributes
-        if metadata.get('date'):
-            self.exif_date = metadata['date']
+        if metadata.get("date"):
+            self.exif_date = metadata["date"]
 
-        if metadata.get('dimensions'):
-            self.width, self.height = metadata['dimensions']
+        if metadata.get("dimensions"):
+            self.width, self.height = metadata["dimensions"]
 
         return metadata
 
-    def generate_thumbnail(self, thumbnail_generator, size: tuple[int, int] = (150, 150)) -> Optional[Path]:
+    def generate_thumbnail(
+        self, thumbnail_generator, size: tuple[int, int] = (150, 150)
+    ) -> Optional[Path]:
         """Generate and cache thumbnail for this photo.
 
         Args:
@@ -192,7 +194,7 @@ class PhotoPair:
         return paths
 
     @staticmethod
-    def detect_pairs(photos: list[Photo]) -> list['PhotoPair']:
+    def detect_pairs(photos: list[Photo]) -> list["PhotoPair"]:
         """Group photos by base name to detect RAW-JPEG pairs.
 
         Args:
@@ -207,24 +209,26 @@ class PhotoPair:
         for photo in photos:
             base = photo.base_name
             if base not in pairs_dict:
-                pairs_dict[base] = {'raw': None, 'jpeg': None}
+                pairs_dict[base] = {"raw": None, "jpeg": None}
 
             if photo.is_raw:
-                pairs_dict[base]['raw'] = photo.path
+                pairs_dict[base]["raw"] = photo.path
             else:
-                pairs_dict[base]['jpeg'] = photo.path
+                pairs_dict[base]["jpeg"] = photo.path
 
         # Create PhotoPair objects
         result = []
         for base_name, paths in pairs_dict.items():
             # Only create pairs where we have at least a JPEG
             # (standalone RAW files are treated as regular photos)
-            if paths['jpeg']:
-                result.append(PhotoPair(
-                    base_name=base_name,
-                    jpeg_path=paths['jpeg'],
-                    raw_path=paths['raw']
-                ))
+            if paths["jpeg"]:
+                result.append(
+                    PhotoPair(
+                        base_name=base_name,
+                        jpeg_path=paths["jpeg"],
+                        raw_path=paths["raw"],
+                    )
+                )
 
         return result
 

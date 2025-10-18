@@ -9,6 +9,7 @@ These tests verify critical functionality:
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
@@ -97,7 +98,7 @@ class TestAlbumDiscovery:
         scanner = FilesystemScanner(temp_photo_dir)
         albums = scanner.scan_albums()
 
-        hidden_albums = [a for a in albums if a.name.startswith('.')]
+        hidden_albums = [a for a in albums if a.name.startswith(".")]
         assert len(hidden_albums) == 0
 
     def test_scan_albums_enforces_flat_hierarchy(self, temp_photo_dir):

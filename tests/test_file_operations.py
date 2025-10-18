@@ -5,12 +5,10 @@ atomicity of filesystem operations.
 """
 
 import pytest
-import shutil
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from src.models.app_state import AppState
-from src.models.album import Album
 from src.services.album_manager import AlbumManager
 from src.services.filesystem_scanner import FilesystemScanner
 from src.utils.file_validator import FileValidator
@@ -52,7 +50,7 @@ def app_state(temp_photo_dir, temp_data_dir):
     return AppState(
         photo_dir=temp_photo_dir,
         state_file=state_file,
-        thumbnail_cache_dir=thumbnail_dir
+        thumbnail_cache_dir=thumbnail_dir,
     )
 
 
@@ -65,6 +63,7 @@ def album_manager(app_state):
 
 
 # ==================== Album Creation Tests ====================
+
 
 class TestAlbumCreation:
     """Tests for album creation validation and functionality."""
@@ -117,7 +116,7 @@ class TestAlbumCreation:
             'Album"WithQuote',
             "Album<WithLess",
             "Album>WithGreater",
-            "Album|WithPipe"
+            "Album|WithPipe",
         ]
 
         for invalid_name in invalid_names:
@@ -132,7 +131,9 @@ class TestAlbumCreation:
         with pytest.raises(ValueError, match="Invalid album name"):
             album_manager.create_album("   ")
 
-    def test_create_album_with_duplicate_name_fails(self, album_manager, temp_photo_dir):
+    def test_create_album_with_duplicate_name_fails(
+        self, album_manager, temp_photo_dir
+    ):
         """Test that creating an album with duplicate name fails."""
         album_name = "2024-01-15_Test_Album_1"  # Already exists
 
@@ -179,6 +180,7 @@ class TestAlbumCreation:
 
 
 # ==================== Album Rename Tests ====================
+
 
 class TestAlbumRename:
     """Tests for album rename validation and atomicity."""
@@ -233,7 +235,7 @@ class TestAlbumRename:
             "Album/WithSlash",
             "Album\\WithBackslash",
             "Album:WithColon",
-            "Album*WithAsterisk"
+            "Album*WithAsterisk",
         ]
 
         for invalid_name in invalid_names:
@@ -333,7 +335,9 @@ class TestAlbumRename:
         new_name = "2024-01-15_Should_Fail_Rename"
 
         # Mock the rename operation to fail
-        with patch.object(Path, 'rename', side_effect=OSError("Simulated filesystem error")):
+        with patch.object(
+            Path, "rename", side_effect=OSError("Simulated filesystem error")
+        ):
             success = album_manager.rename_album(album, new_name)
 
             # Verify rename failed
@@ -366,6 +370,7 @@ class TestAlbumRename:
 
 # ==================== File Validator Tests ====================
 
+
 class TestFileValidator:
     """Tests for file validator utility functions."""
 
@@ -376,7 +381,7 @@ class TestFileValidator:
             "Simple Album",
             "Trip to Zürich",
             "Photos-2024",
-            "Album_123"
+            "Album_123",
         ]
 
         for name in valid_names:
@@ -395,7 +400,7 @@ class TestFileValidator:
             ("Album*Asterisk", "invalid characters"),
             ("CON", "reserved"),
             ("PRN", "reserved"),
-            ("...", "dots")
+            ("...", "dots"),
         ]
 
         for name, reason in invalid_names:
@@ -417,24 +422,21 @@ class TestFileValidator:
         """Test combined validation and availability check."""
         # Valid and available
         is_valid, error = FileValidator.validate_and_check_availability(
-            temp_photo_dir,
-            "2024-05-20_New_Album"
+            temp_photo_dir, "2024-05-20_New_Album"
         )
         assert is_valid is True
         assert error is None
 
         # Valid but not available
         is_valid, error = FileValidator.validate_and_check_availability(
-            temp_photo_dir,
-            "2024-01-15_Test_Album_1"
+            temp_photo_dir, "2024-01-15_Test_Album_1"
         )
         assert is_valid is False
         assert "already exists" in error
 
         # Invalid name
         is_valid, error = FileValidator.validate_and_check_availability(
-            temp_photo_dir,
-            "Album/Invalid"
+            temp_photo_dir, "Album/Invalid"
         )
         assert is_valid is False
         assert error is not None
@@ -442,7 +444,10 @@ class TestFileValidator:
     def test_sanitize_album_name(self):
         """Test album name sanitization."""
         # Replace invalid characters
-        assert FileValidator.sanitize_album_name("Album/With*Invalid") == "Album_With_Invalid"
+        assert (
+            FileValidator.sanitize_album_name("Album/With*Invalid")
+            == "Album_With_Invalid"
+        )
 
         # Handle reserved names
         assert "album" in FileValidator.sanitize_album_name("CON").lower()
@@ -453,6 +458,7 @@ class TestFileValidator:
 
 
 # ==================== Photo Move Tests ====================
+
 
 class TestPhotoMove:
     """Tests for photo move operations with atomicity and RAW-JPEG pairing."""
@@ -511,8 +517,8 @@ class TestPhotoMove:
         result = manager.move_photos([photo_path], dest_album)
 
         # Verify move was successful
-        assert result['success'] is True
-        assert result['moved_count'] == 1
+        assert result["success"] is True
+        assert result["moved_count"] == 1
         assert not photo_path.exists()
         assert (dest_album / "IMG_002.jpg").exists()
         assert (dest_album / "IMG_002.jpg").read_text() == "Standalone JPEG"
@@ -531,8 +537,8 @@ class TestPhotoMove:
         result = manager.move_photos([jpeg_path], dest_album)
 
         # Verify both files were moved
-        assert result['success'] is True
-        assert result['moved_count'] == 2  # JPEG + RAW
+        assert result["success"] is True
+        assert result["moved_count"] == 2  # JPEG + RAW
 
         # Source should be empty of this pair
         assert not (source_album / "IMG_001.jpg").exists()
@@ -558,8 +564,8 @@ class TestPhotoMove:
         result = manager.move_photos([raw_path], dest_album)
 
         # Verify both files were moved
-        assert result['success'] is True
-        assert result['moved_count'] == 2  # RAW + JPEG
+        assert result["success"] is True
+        assert result["moved_count"] == 2  # RAW + JPEG
 
         # Both files should be in destination
         assert (dest_album / "IMG_003.nef").exists()
@@ -579,15 +585,15 @@ class TestPhotoMove:
         # Select multiple photos (including one pair)
         photos = [
             source_album / "IMG_001.jpg",  # Will also move IMG_001.cr3
-            source_album / "IMG_002.jpg"   # Standalone
+            source_album / "IMG_002.jpg",  # Standalone
         ]
 
         # Move photos
         result = manager.move_photos(photos, dest_album)
 
         # Verify all moved (3 files total: IMG_001.cr3, IMG_001.jpg, IMG_002.jpg)
-        assert result['success'] is True
-        assert result['moved_count'] == 3
+        assert result["success"] is True
+        assert result["moved_count"] == 3
 
         # Verify destination has all files
         assert (dest_album / "IMG_001.jpg").exists()
@@ -606,15 +612,15 @@ class TestPhotoMove:
 
         photos = [
             source_album / "IMG_001.jpg",
-            source_album / "IMG_002.jpg"  # This will conflict
+            source_album / "IMG_002.jpg",  # This will conflict
         ]
 
         # Move should fail due to conflict
         result = manager.move_photos(photos, dest_album)
 
         # Verify move failed
-        assert result['success'] is False
-        assert 'error' in result
+        assert result["success"] is False
+        assert "error" in result
 
         # Verify rollback: all source files should still exist
         assert (source_album / "IMG_001.jpg").exists()
@@ -641,8 +647,10 @@ class TestPhotoMove:
         # Move should fail
         result = manager.move_photos([photo_path], dest_album)
 
-        assert result['success'] is False
-        assert 'conflict' in result['error'].lower() or 'exists' in result['error'].lower()
+        assert result["success"] is False
+        assert (
+            "conflict" in result["error"].lower() or "exists" in result["error"].lower()
+        )
 
     def test_move_photos_to_nonexistent_destination_fails(self, photo_manager_setup):
         """Test that moving to non-existent destination fails gracefully."""
@@ -656,8 +664,8 @@ class TestPhotoMove:
         # Move should fail
         result = manager.move_photos([photo_path], dest_album)
 
-        assert result['success'] is False
-        assert 'error' in result
+        assert result["success"] is False
+        assert "error" in result
 
         # Source file should still exist
         assert photo_path.exists()
@@ -671,8 +679,8 @@ class TestPhotoMove:
         # Move empty list
         result = manager.move_photos([], dest_album)
 
-        assert result['success'] is False
-        assert 'error' in result
+        assert result["success"] is False
+        assert "error" in result
 
     def test_move_photos_preserves_file_content(self, photo_manager_setup):
         """Test that file content is preserved during move."""
@@ -688,10 +696,12 @@ class TestPhotoMove:
         result = manager.move_photos([photo_path], dest_album)
 
         # Verify content preserved
-        assert result['success'] is True
+        assert result["success"] is True
         assert (dest_album / "IMG_002.jpg").read_text() == original_content
 
-    def test_move_photos_with_partial_pair_only_moves_existing(self, photo_manager_setup):
+    def test_move_photos_with_partial_pair_only_moves_existing(
+        self, photo_manager_setup
+    ):
         """Test that if only RAW or JPEG exists, only that file is moved."""
         manager, photo_dir = photo_manager_setup
 
@@ -706,7 +716,7 @@ class TestPhotoMove:
         result = manager.move_photos([standalone_raw], dest_album)
 
         # Only the RAW should be moved
-        assert result['success'] is True
-        assert result['moved_count'] == 1
+        assert result["success"] is True
+        assert result["moved_count"] == 1
         assert (dest_album / "IMG_999.cr3").exists()
         assert not (dest_album / "IMG_999.jpg").exists()  # No pair

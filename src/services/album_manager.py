@@ -35,7 +35,7 @@ class AlbumManager:
         app_state: AppState,
         scanner: FilesystemScanner,
         photo_processor: Optional[PhotoProcessor] = None,
-        on_albums_changed: Optional[Callable[[List[Album]], None]] = None
+        on_albums_changed: Optional[Callable[[List[Album]], None]] = None,
     ):
         """Initialize album manager.
 
@@ -146,8 +146,7 @@ class AlbumManager:
         # Sort by date, newest first
         # Albums without dates go to the end
         self._albums.sort(
-            key=lambda album: album.date if album.date else date.min,
-            reverse=True
+            key=lambda album: album.date if album.date else date.min, reverse=True
         )
 
     def _apply_custom_order(self):
@@ -172,8 +171,7 @@ class AlbumManager:
 
         # Sort unordered albums chronologically
         unordered.sort(
-            key=lambda album: album.date if album.date else date.min,
-            reverse=True
+            key=lambda album: album.date if album.date else date.min, reverse=True
         )
 
         # Combine: custom ordered first, then chronological
@@ -262,17 +260,17 @@ class AlbumManager:
             return
 
         try:
-            with open(state_file, 'r') as f:
+            with open(state_file, "r") as f:
                 data = json.load(f)
 
                 # Extract album_order array
-                album_order = data.get('album_order', [])
+                album_order = data.get("album_order", [])
 
                 # Build custom order mapping
                 self._custom_order.clear()
                 for entry in album_order:
-                    album_path = entry.get('album_path')
-                    sort_index = entry.get('sort_index')
+                    album_path = entry.get("album_path")
+                    sort_index = entry.get("sort_index")
 
                     if album_path and sort_index is not None:
                         self._custom_order[album_path] = sort_index
@@ -290,22 +288,23 @@ class AlbumManager:
 
         # Build album_order array
         album_order = []
-        for album_path, sort_index in sorted(self._custom_order.items(), key=lambda x: x[1]):
-            album_order.append({
-                'album_path': album_path,
-                'sort_index': sort_index,
-                'metadata': {},
-                'updated_at': datetime.now().isoformat()
-            })
+        for album_path, sort_index in sorted(
+            self._custom_order.items(), key=lambda x: x[1]
+        ):
+            album_order.append(
+                {
+                    "album_path": album_path,
+                    "sort_index": sort_index,
+                    "metadata": {},
+                    "updated_at": datetime.now().isoformat(),
+                }
+            )
 
         # Create state data
-        state_data = {
-            'version': '1.0',
-            'album_order': album_order
-        }
+        state_data = {"version": "1.0", "album_order": album_order}
 
         try:
-            with open(state_file, 'w') as f:
+            with open(state_file, "w") as f:
                 json.dump(state_data, f, indent=2)
         except IOError as e:
             print(f"Error: Could not save custom ordering: {e}")
@@ -417,6 +416,7 @@ class AlbumManager:
             # Delete directory if requested
             if delete_files and album.path.exists():
                 import shutil
+
                 shutil.rmtree(album.path)
 
             # Notify observers
@@ -514,7 +514,18 @@ class AlbumManager:
         Returns:
             List of Photo objects
         """
-        supported_formats = {'.jpg', '.jpeg', '.png', '.heic', '.cr3', '.cr2', '.nef', '.arw', '.dng', '.raw'}
+        supported_formats = {
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".heic",
+            ".cr3",
+            ".cr2",
+            ".nef",
+            ".arw",
+            ".dng",
+            ".raw",
+        }
 
         photos = []
 
@@ -533,9 +544,7 @@ class AlbumManager:
         return photos
 
     def load_photos_with_deduplication(
-        self,
-        album: Album,
-        force_reload: bool = False
+        self, album: Album, force_reload: bool = False
     ) -> List[PhotoPair]:
         """Load photos with RAW-JPEG deduplication.
 
@@ -555,9 +564,7 @@ class AlbumManager:
         return pairs
 
     def generate_thumbnails_for_album(
-        self,
-        album: Album,
-        photos: Optional[List[Photo]] = None
+        self, album: Album, photos: Optional[List[Photo]] = None
     ) -> int:
         """Generate thumbnails for all photos in an album.
 
@@ -584,7 +591,9 @@ class AlbumManager:
                     photo.thumbnail_path = thumbnail_path
                     success_count += 1
             except Exception as e:
-                print(f"Warning: Could not generate thumbnail for {photo.filename}: {e}")
+                print(
+                    f"Warning: Could not generate thumbnail for {photo.filename}: {e}"
+                )
 
         return success_count
 
@@ -613,11 +622,15 @@ class AlbumManager:
                     first_photo = photos[0]
                     try:
                         # Generate album preview thumbnail
-                        thumbnail_path = self.photo_processor.generate_album_preview(first_photo.path)
+                        thumbnail_path = self.photo_processor.generate_album_preview(
+                            first_photo.path
+                        )
                         if thumbnail_path:
                             album.thumbnail_path = thumbnail_path
                     except Exception as e:
-                        print(f"Warning: Could not generate album thumbnail for {album.name}: {e}")
+                        print(
+                            f"Warning: Could not generate album thumbnail for {album.name}: {e}"
+                        )
 
     def __str__(self) -> str:
         """String representation."""

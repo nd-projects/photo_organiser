@@ -5,11 +5,16 @@ navigation controls and keyboard shortcuts.
 """
 
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QWidget
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QWidget,
 )
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QTimer
-from PyQt6.QtGui import QPixmap, QKeyEvent, QWheelEvent, QImage
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
+from PyQt6.QtGui import QPixmap, QKeyEvent
 from pathlib import Path
 from typing import Optional, List
 
@@ -36,7 +41,7 @@ class Lightbox(QDialog):
         self,
         photos: List,  # List[Photo | PhotoPair]
         current_index: int = 0,
-        parent=None
+        parent=None,
     ):
         """Initialize lightbox.
 
@@ -62,9 +67,9 @@ class Lightbox(QDialog):
 
         # Full screen mode support
         self.setWindowFlags(
-            Qt.WindowType.Window |
-            Qt.WindowType.WindowMaximizeButtonHint |
-            Qt.WindowType.WindowCloseButtonHint
+            Qt.WindowType.Window
+            | Qt.WindowType.WindowMaximizeButtonHint
+            | Qt.WindowType.WindowCloseButtonHint
         )
 
         # Create UI
@@ -116,7 +121,9 @@ class Lightbox(QDialog):
 
         # Title label
         self.title_label = QLabel("Photo Viewer")
-        self.title_label.setStyleSheet("color: white; font-size: 14px; font-weight: bold;")
+        self.title_label.setStyleSheet(
+            "color: white; font-size: 14px; font-weight: bold;"
+        )
         toolbar_layout.addWidget(self.title_label)
 
         toolbar_layout.addStretch()
@@ -237,7 +244,11 @@ class Lightbox(QDialog):
 
     def _load_current_photo(self):
         """Load and display the current photo."""
-        if not self.photos or self.current_index < 0 or self.current_index >= len(self.photos):
+        if (
+            not self.photos
+            or self.current_index < 0
+            or self.current_index >= len(self.photos)
+        ):
             self._show_error("No photo to display")
             return
 
@@ -290,7 +301,7 @@ class Lightbox(QDialog):
             available_width,
             available_height,
             Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation
+            Qt.TransformationMode.SmoothTransformation,
         )
 
         # Display scaled image
@@ -347,7 +358,9 @@ class Lightbox(QDialog):
         try:
             size_bytes = display_path.stat().st_size
             size_mb = size_bytes / (1024 * 1024)
-            size_str = f"{size_mb:.1f} MB" if size_mb >= 1 else f"{size_bytes // 1024} KB"
+            size_str = (
+                f"{size_mb:.1f} MB" if size_mb >= 1 else f"{size_bytes // 1024} KB"
+            )
         except OSError:
             size_str = "Unknown size"
 
@@ -386,9 +399,7 @@ class Lightbox(QDialog):
         painter.setPen(QColor(255, 100, 100))
         painter.setFont(QFont("Arial", 12))
         painter.drawText(
-            error_pixmap.rect(),
-            Qt.AlignmentFlag.AlignCenter,
-            f"⚠\n\n{message}"
+            error_pixmap.rect(), Qt.AlignmentFlag.AlignCenter, f"⚠\n\n{message}"
         )
         painter.end()
 

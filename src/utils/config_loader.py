@@ -24,6 +24,7 @@ class AppConfig:
         log_level: Logging level
         log_file: Path to log file (None for console only)
     """
+
     photo_dir: Path
     state_file: Optional[Path] = None
     cache_dir: Optional[Path] = None
@@ -66,7 +67,10 @@ class AppConfig:
         # Log level must be valid
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         if self.log_level.upper() not in valid_levels:
-            return False, f"Invalid log level: {self.log_level}. Must be one of: {', '.join(valid_levels)}"
+            return (
+                False,
+                f"Invalid log level: {self.log_level}. Must be one of: {', '.join(valid_levels)}",
+            )
 
         return True, None
 

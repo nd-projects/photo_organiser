@@ -13,16 +13,35 @@ class FileValidator:
     """Validator for filenames and album names."""
 
     # Invalid characters for filesystem paths (Windows + Unix)
-    INVALID_CHARS = {'/', '\\', ':', '*', '?', '"', '<', '>', '|', '\0'}
+    INVALID_CHARS = {"/", "\\", ":", "*", "?", '"', "<", ">", "|", "\0"}
 
     # Pattern to match any invalid character
     INVALID_PATTERN = re.compile(r'[/\\:*?"<>|\x00]')
 
     # Reserved names on Windows
     RESERVED_NAMES = {
-        'CON', 'PRN', 'AUX', 'NUL',
-        'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
-        'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        "COM1",
+        "COM2",
+        "COM3",
+        "COM4",
+        "COM5",
+        "COM6",
+        "COM7",
+        "COM8",
+        "COM9",
+        "LPT1",
+        "LPT2",
+        "LPT3",
+        "LPT4",
+        "LPT5",
+        "LPT6",
+        "LPT7",
+        "LPT8",
+        "LPT9",
     }
 
     @staticmethod
@@ -47,11 +66,11 @@ class FileValidator:
             return False
 
         # Check for names that are just dots or spaces
-        if name.strip('.').strip() == '':
+        if name.strip(".").strip() == "":
             return False
 
         # Check length (most filesystems have 255 char limit)
-        if len(name.encode('utf-8')) > 255:
+        if len(name.encode("utf-8")) > 255:
             return False
 
         return True
@@ -72,21 +91,24 @@ class FileValidator:
 
         if FileValidator.INVALID_PATTERN.search(name):
             invalid_chars = [c for c in FileValidator.INVALID_CHARS if c in name]
-            return False, f"Album name contains invalid characters: {', '.join(invalid_chars)}"
+            return (
+                False,
+                f"Album name contains invalid characters: {', '.join(invalid_chars)}",
+            )
 
         if name.upper() in FileValidator.RESERVED_NAMES:
             return False, f"Album name '{name}' is a reserved system name"
 
-        if name.strip('.').strip() == '':
+        if name.strip(".").strip() == "":
             return False, "Album name cannot consist only of dots and spaces"
 
-        if len(name.encode('utf-8')) > 255:
+        if len(name.encode("utf-8")) > 255:
             return False, "Album name is too long (max 255 bytes)"
 
         return True, None
 
     @staticmethod
-    def sanitize_album_name(name: str, replacement: str = '_') -> str:
+    def sanitize_album_name(name: str, replacement: str = "_") -> str:
         """Sanitize album name by replacing invalid characters.
 
         Args:
@@ -107,14 +129,14 @@ class FileValidator:
             sanitized = f"{sanitized}_album"
 
         # Ensure it's not empty after sanitization
-        sanitized = sanitized.strip('.').strip()
+        sanitized = sanitized.strip(".").strip()
         if not sanitized:
             sanitized = "Untitled"
 
         # Truncate if too long
-        if len(sanitized.encode('utf-8')) > 255:
+        if len(sanitized.encode("utf-8")) > 255:
             # Truncate to 255 bytes
-            sanitized = sanitized.encode('utf-8')[:255].decode('utf-8', errors='ignore')
+            sanitized = sanitized.encode("utf-8")[:255].decode("utf-8", errors="ignore")
 
         return sanitized
 
@@ -134,8 +156,7 @@ class FileValidator:
 
     @staticmethod
     def validate_and_check_availability(
-        parent_dir: Path,
-        album_name: str
+        parent_dir: Path, album_name: str
     ) -> tuple[bool, Optional[str]]:
         """Validate album name and check if it's available.
 
@@ -168,8 +189,17 @@ class FileValidator:
             True if file format is supported
         """
         supported_formats = {
-            '.jpg', '.jpeg', '.png', '.heic', '.heif',  # Standard
-            '.cr3', '.cr2', '.nef', '.arw', '.dng', '.raw'  # RAW
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".heic",
+            ".heif",  # Standard
+            ".cr3",
+            ".cr2",
+            ".nef",
+            ".arw",
+            ".dng",
+            ".raw",  # RAW
         }
         return path.suffix.lower() in supported_formats
 
@@ -204,12 +234,11 @@ class FileValidator:
         ext2 = file2.suffix.lower()
 
         # Check if one is RAW and one is JPEG
-        raw_exts = {'.cr3', '.cr2', '.nef', '.arw', '.dng', '.raw'}
-        jpeg_exts = {'.jpg', '.jpeg'}
+        raw_exts = {".cr3", ".cr2", ".nef", ".arw", ".dng", ".raw"}
+        jpeg_exts = {".jpg", ".jpeg"}
 
-        is_pair = (
-            (ext1 in raw_exts and ext2 in jpeg_exts) or
-            (ext1 in jpeg_exts and ext2 in raw_exts)
+        is_pair = (ext1 in raw_exts and ext2 in jpeg_exts) or (
+            ext1 in jpeg_exts and ext2 in raw_exts
         )
 
         return is_pair

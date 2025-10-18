@@ -10,9 +10,7 @@ from typing import Optional
 
 
 def setup_logging(
-    log_level: str = "INFO",
-    log_file: Optional[Path] = None,
-    console: bool = True
+    log_level: str = "INFO", log_file: Optional[Path] = None, console: bool = True
 ) -> logging.Logger:
     """Setup application logging.
 
@@ -34,7 +32,7 @@ def setup_logging(
     # Create formatter
     formatter = logging.Formatter(
         fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     # Console handler

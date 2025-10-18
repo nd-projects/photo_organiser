@@ -21,7 +21,7 @@ class DragDropHelper:
         widget: QWidget,
         item: QListWidgetItem,
         album_path: str,
-        preview_pixmap: Optional[QPixmap] = None
+        preview_pixmap: Optional[QPixmap] = None,
     ) -> QDrag:
         """Create a QDrag object for an album item.
 
@@ -38,7 +38,7 @@ class DragDropHelper:
 
         # Create MIME data
         mime_data = QMimeData()
-        mime_data.setData(DragDropHelper.ALBUM_MIME_TYPE, album_path.encode('utf-8'))
+        mime_data.setData(DragDropHelper.ALBUM_MIME_TYPE, album_path.encode("utf-8"))
         mime_data.setText(album_path)
         drag.setMimeData(mime_data)
 
@@ -46,15 +46,18 @@ class DragDropHelper:
         if preview_pixmap and not preview_pixmap.isNull():
             # Scale preview to reasonable size
             scaled_preview = preview_pixmap.scaled(
-                200, 200,
+                200,
+                200,
                 Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation
+                Qt.TransformationMode.SmoothTransformation,
             )
 
             # Add semi-transparent background
             final_pixmap = DragDropHelper._add_drag_shadow(scaled_preview)
             drag.setPixmap(final_pixmap)
-            drag.setHotSpot(QPoint(final_pixmap.width() // 2, final_pixmap.height() // 2))
+            drag.setHotSpot(
+                QPoint(final_pixmap.width() // 2, final_pixmap.height() // 2)
+            )
         else:
             # Create a simple placeholder preview
             placeholder = DragDropHelper._create_placeholder_preview(item.text())
@@ -126,11 +129,7 @@ class DragDropHelper:
         painter.drawRoundedRect(5, 5, pixmap.width() - 10, pixmap.height() - 10, 10, 10)
 
         # Draw text centered
-        painter.drawText(
-            pixmap.rect(),
-            Qt.AlignmentFlag.AlignCenter,
-            display_text
-        )
+        painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, display_text)
 
         painter.end()
 
@@ -148,7 +147,7 @@ class DragDropHelper:
         """
         if mime_data.hasFormat(DragDropHelper.ALBUM_MIME_TYPE):
             data = mime_data.data(DragDropHelper.ALBUM_MIME_TYPE)
-            return bytes(data).decode('utf-8')
+            return bytes(data).decode("utf-8")
 
         return None
 
@@ -170,11 +169,7 @@ class DropIndicator:
 
     @staticmethod
     def draw_insertion_line(
-        painter: QPainter,
-        x: int,
-        y: int,
-        width: int,
-        is_horizontal: bool = True
+        painter: QPainter, x: int, y: int, width: int, is_horizontal: bool = True
     ):
         """Draw an insertion line indicator.
 

@@ -61,7 +61,7 @@ class Album:
             Date object if parsing succeeds, None otherwise
         """
         # Match YYYY-MM-DD at start of name
-        match = re.match(r'^(\d{4})-(\d{2})-(\d{2})', name)
+        match = re.match(r"^(\d{4})-(\d{2})-(\d{2})", name)
         if match:
             year, month, day = map(int, match.groups())
             try:
@@ -88,7 +88,7 @@ class Album:
             Formatted date or "Unknown Date"
         """
         if self.date:
-            return self.date.strftime('%Y-%m-%d')
+            return self.date.strftime("%Y-%m-%d")
         return "Unknown Date"
 
     @property

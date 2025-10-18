@@ -45,7 +45,7 @@ class FilesystemScanner:
 
         try:
             for item in self.root_dir.iterdir():
-                if item.is_dir() and not item.name.startswith('.'):
+                if item.is_dir() and not item.name.startswith("."):
                     # Create album object
                     album = Album(path=item)
 
@@ -143,7 +143,7 @@ class FilesystemScanner:
         if not directory.exists() or not directory.is_dir():
             return False
 
-        if directory.name.startswith('.'):
+        if directory.name.startswith("."):
             return False
 
         # Must be direct child of root (flat hierarchy)
