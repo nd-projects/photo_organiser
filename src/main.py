@@ -91,6 +91,12 @@ class PhotoOrganizerApp:
             on_album_open=self._handle_album_open
         )
 
+        # Connect album grid signals for drag-drop reordering
+        self.window.album_grid.albums_reordered.connect(self._handle_albums_reordered)
+        self.window.album_grid.revert_to_chronological_requested.connect(
+            self._handle_revert_to_chronological
+        )
+
         # Load albums
         print("Loading albums...")
         self.window.show_loading("Loading albums...")
@@ -176,8 +182,41 @@ class PhotoOrganizerApp:
             albums: Updated albums list
         """
         if self.window:
+            import traceback
             print(f"Albums changed: {len(albums)} albums")
+            print("Call stack:")
+            for line in traceback.format_stack()[:-1]:
+                print(line.strip())
             self.window.show_albums(albums)
+
+    def _handle_albums_reordered(self, albums: list[Album]):
+        """Handle albums being reordered via drag-drop.
+
+        Args:
+            albums: Albums in new order
+        """
+        print(f"DEBUG: _handle_albums_reordered called with {len(albums)} albums")
+        for i, album in enumerate(albums):
+            print(f"  {i}: {album.name}")
+
+        # Update album manager with new custom order
+        self.album_manager.set_custom_order(albums)
+        print(f"DEBUG: Custom order saved to album manager")
+
+        # Status update
+        if self.window:
+            self.window.set_status("Album order saved")
+
+    def _handle_revert_to_chronological(self):
+        """Handle request to revert to chronological ordering."""
+        print("Reverting to chronological order")
+
+        # Revert to chronological order in album manager
+        self.album_manager.revert_to_chronological_order()
+
+        # The albums_changed callback will update the UI
+        if self.window:
+            self.window.set_status("Reverted to chronological order")
 
 
 

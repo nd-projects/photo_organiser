@@ -1,6 +1,6 @@
 """UI widgets for photo organizer application."""
 
-from .virtual_grid import VirtualGrid
-from .album_tile import AlbumTile
+from .photo_tile import PhotoTile
+from .drag_drop import DragDropHelper, DropIndicator
 
-__all__ = ['VirtualGrid', 'AlbumTile']
+__all__ = ['PhotoTile', 'DragDropHelper', 'DropIndicator']

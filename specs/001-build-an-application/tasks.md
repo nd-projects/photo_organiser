@@ -117,12 +117,12 @@
 
 ### Implementation for User Story 3
 
-- [ ] T042 [P] [US3] Implement PyQt6 QDrag drag-drop for album tiles in src/ui/widgets/drag_drop.py
-- [ ] T043 [US3] Add mousePressEvent, mouseMoveEvent, dragEnterEvent, dropEvent handlers to AlbumTile in src/ui/widgets/album_tile.py
-- [ ] T044 [US3] Implement visual feedback during drag (QDrag pixmap preview) in src/ui/album_grid.py
-- [ ] T045 [US3] Add album reorder handler in AlbumManager in src/services/album_manager.py
-- [ ] T046 [US3] Implement save_ordering to persist to JSON state file in src/services/album_manager.py
-- [ ] T047 [US3] Add revert-to-chronological action in AlbumGrid in src/ui/album_grid.py
+- [X] T042 [P] [US3] Implement PyQt6 QDrag drag-drop for album tiles in src/ui/widgets/drag_drop.py
+- [X] T043 [US3] Add mousePressEvent, mouseMoveEvent, dragEnterEvent, dropEvent handlers to AlbumTile in src/ui/widgets/album_tile.py
+- [X] T044 [US3] Implement visual feedback during drag (QDrag pixmap preview) in src/ui/album_grid.py
+- [X] T045 [US3] Add album reorder handler in AlbumManager in src/services/album_manager.py
+- [X] T046 [US3] Implement save_ordering to persist to JSON state file in src/services/album_manager.py
+- [X] T047 [US3] Add revert-to-chronological action in AlbumGrid in src/ui/album_grid.py
 
 **Checkpoint**: At this point, User Stories 1, 2, AND 3 should all work - albums can be reordered
 

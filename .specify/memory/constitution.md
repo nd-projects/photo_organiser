@@ -1,32 +1,29 @@
 <!--
 Sync Impact Report
 ==================
-Version Change: 0.0.0 → 1.0.0
-Modification Type: Initial constitution creation (MAJOR)
-Rationale: First version establishing core principles focused on code quality, UX consistency, performance, and minimal testing.
+Version Change: 1.0.0 → 1.1.0
+Modification Type: MINOR - Added Python tooling requirement
+Rationale: Added mandatory requirement that all Python operations must use uv for dependency management and command execution.
 
-Principles Established:
-- I. Code Quality & Simplicity
-- II. User Experience Consistency
-- III. Performance First
-- IV. Pragmatic Testing (minimal test requirements)
-- V. Progressive Enhancement
+Principles Modified:
+- Development Standards: Added "Python Tooling" subsection
 
 Added Sections:
-- Core Principles (5 principles)
-- Performance Standards
-- Development Standards
-- Governance
+- Development Standards > Python Tooling (new subsection)
+
+Removed Sections:
+- None
 
 Templates Status:
-✅ plan-template.md - Validated (Constitution Check section will use these principles)
-✅ spec-template.md - Validated (Requirements align with UX consistency)
-✅ tasks-template.md - Validated (Task categorization reflects minimal testing approach)
+✅ plan-template.md - No changes needed (constitution check references principles generically)
+✅ spec-template.md - No changes needed (requirements are implementation-agnostic)
+✅ tasks-template.md - No changes needed (task execution handles uv via agent instructions)
+✅ README.md - Already documents uv usage correctly
 
 Follow-up TODOs:
-- None - all placeholders filled
+- None - requirement aligns with existing project practice
 
-Date: 2025-10-15
+Date: 2025-10-18
 -->
 
 # Photo Organiser Constitution
@@ -139,6 +136,27 @@ All implementations MUST meet these measurable performance criteria:
 
 ## Development Standards
 
+### Python Tooling
+
+**Rule**: All Python operations MUST be executed using `uv` as the package manager and command runner.
+
+**Requirements**:
+
+- Dependency installation MUST use `uv sync` (not `pip install`)
+- Script execution MUST use `uv run <command>` (not direct python invocation)
+- Virtual environment management MUST be handled by `uv` (not virtualenv/venv)
+- New dependencies MUST be added via `uv add <package>` (not manual pyproject.toml edits)
+- Development dependencies MUST use `uv add --dev <package>`
+- All test commands MUST use `uv run pytest` (not direct pytest invocation)
+
+**Prohibited**:
+
+- Direct use of `pip`, `pip install`, `pip freeze`
+- Direct use of `python -m`, `python script.py` (use `uv run python` instead)
+- Manual creation of virtual environments with `venv` or `virtualenv`
+
+**Rationale**: `uv` provides faster dependency resolution, deterministic builds, and better compatibility handling than traditional pip-based workflows. Standardizing on uv ensures consistent environments across development and prevents dependency conflicts. The project is already built with uv, and all tooling must respect this architectural decision.
+
 ### Code Organization
 
 - Follow standard project structure conventions for the chosen language/framework
@@ -191,4 +209,4 @@ All implementations MUST meet these measurable performance criteria:
 - Changes to principles require updating LAST_AMENDED_DATE
 - Major architectural decisions MUST reference relevant constitutional principles
 
-**Version**: 1.0.0 | **Ratified**: 2025-10-15 | **Last Amended**: 2025-10-15
+**Version**: 1.1.0 | **Ratified**: 2025-10-15 | **Last Amended**: 2025-10-18
