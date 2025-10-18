@@ -52,6 +52,11 @@ class MainWindow(QMainWindow):
         self._current_album: Optional[Album] = None
         self._current_photos: list = []  # List[Photo | PhotoPair]
         self._is_fullscreen = False
+        self._all_albums: list[Album] = []  # Store all albums before filtering
+
+        # Load settings
+        settings = app_state.load_settings()
+        self._hide_empty_albums = settings.get('hide_empty_albums', True)
 
         # Create UI
         self._create_widgets()
@@ -90,7 +95,7 @@ class MainWindow(QMainWindow):
 
     def _create_header(self) -> QWidget:
         """Create header with title and controls."""
-        from PyQt6.QtWidgets import QPushButton
+        from PyQt6.QtWidgets import QPushButton, QCheckBox
 
         header_widget = QWidget()
         header_layout = QHBoxLayout(header_widget)
@@ -137,6 +142,16 @@ class MainWindow(QMainWindow):
         header_layout.addWidget(dir_label)
 
         header_layout.addStretch()  # Push everything to the left
+
+        # Toggle for hiding empty albums (only visible in album view)
+        self.hide_empty_checkbox = QCheckBox("Hide empty albums")
+        self.hide_empty_checkbox.setChecked(self._hide_empty_albums)  # Set from loaded state
+        self.hide_empty_checkbox.setToolTip("Hide albums with 0 photos")
+        checkbox_font = self.hide_empty_checkbox.font()
+        checkbox_font.setPointSize(11)
+        self.hide_empty_checkbox.setFont(checkbox_font)
+        self.hide_empty_checkbox.stateChanged.connect(self._handle_hide_empty_toggle)
+        header_layout.addWidget(self.hide_empty_checkbox)
 
         return header_widget
 
@@ -195,6 +210,22 @@ class MainWindow(QMainWindow):
         self._current_album = None
         self._current_photos.clear()
 
+    def _handle_hide_empty_toggle(self, state):
+        """Handle hide empty albums checkbox toggle.
+
+        Args:
+            state: Qt.CheckState value
+        """
+        self._hide_empty_albums = (state == Qt.CheckState.Checked.value)
+
+        # Save the preference
+        settings = self.app_state.load_settings()
+        settings['hide_empty_albums'] = self._hide_empty_albums
+        self.app_state.save_settings(settings)
+
+        # Apply the filter
+        self._apply_album_filter()
+
     def _handle_photo_double_click(self, photo_or_pair, index: int):
         """Handle photo double-click to open lightbox.
 
@@ -228,6 +259,7 @@ class MainWindow(QMainWindow):
         self.photo_grid.hide()
         self.album_grid.show()
         self.back_button.hide()
+        self.hide_empty_checkbox.show()  # Show checkbox in album view
         self.title_label.setText("Photo Albums")
         self._update_status()
 
@@ -237,6 +269,7 @@ class MainWindow(QMainWindow):
         self.album_grid.hide()
         self.photo_grid.show()
         self.back_button.show()
+        self.hide_empty_checkbox.hide()  # Hide checkbox in photo view
 
         if self._current_album:
             self.title_label.setText(f"{self._current_album.name}")
@@ -261,7 +294,17 @@ class MainWindow(QMainWindow):
         Args:
             albums: List of albums to display
         """
-        self.album_grid.set_albums(albums)
+        self._all_albums = albums
+        self._apply_album_filter()
+
+    def _apply_album_filter(self):
+        """Apply current filter settings to albums."""
+        if self._hide_empty_albums:
+            filtered_albums = [album for album in self._all_albums if album.photo_count > 0]
+        else:
+            filtered_albums = self._all_albums
+
+        self.album_grid.set_albums(filtered_albums)
         self._update_status()
 
     def clear_albums(self):

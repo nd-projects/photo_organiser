@@ -70,6 +70,55 @@ class AppState:
             print(f"Warning: Could not load album order from {self.state_file}: {e}")
             return []
 
+    def load_settings(self) -> dict:
+        """Load application settings from JSON state file.
+
+        Returns:
+            Dictionary of settings. Returns defaults if file doesn't exist or is invalid.
+        """
+        defaults = {
+            'hide_empty_albums': True
+        }
+
+        if not self.state_file.exists():
+            return defaults
+
+        try:
+            with open(self.state_file, 'r') as f:
+                data = json.load(f)
+                return data.get('settings', defaults)
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"Warning: Could not load settings from {self.state_file}: {e}")
+            return defaults
+
+    def save_settings(self, settings: dict) -> None:
+        """Save application settings to JSON state file.
+
+        Args:
+            settings: Dictionary of settings to save
+
+        Raises:
+            IOError: If file cannot be written
+        """
+        # Load existing data
+        existing_data = {}
+        if self.state_file.exists():
+            try:
+                with open(self.state_file, 'r') as f:
+                    existing_data = json.load(f)
+            except (json.JSONDecodeError, IOError):
+                pass  # Use empty dict if can't load
+
+        # Update settings
+        existing_data['settings'] = settings
+        if 'version' not in existing_data:
+            existing_data['version'] = '1.0'
+
+        # Write to file
+        self.state_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.state_file, 'w') as f:
+            json.dump(existing_data, f, indent=2)
+
     def save_album_order(self, album_order: list[dict]) -> None:
         """Save album order to JSON state file.
 
