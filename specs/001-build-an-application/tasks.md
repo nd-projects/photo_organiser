@@ -164,20 +164,20 @@
 
 **NOTE: These tests verify critical file move operations to prevent data loss**
 
-- [ ] T056 [P] [US5] Implement test for photo move atomicity and rollback in tests/test_file_operations.py
-- [ ] T057 [P] [US5] Implement test for RAW-JPEG pair moving together in tests/test_file_operations.py
+- [X] T056 [P] [US5] Implement test for photo move atomicity and rollback in tests/test_file_operations.py
+- [X] T057 [P] [US5] Implement test for RAW-JPEG pair moving together in tests/test_file_operations.py
 
 ### Implementation for User Story 5
 
-- [ ] T058 [P] [US5] Create PhotoManager service for photo operations in src/services/photo_manager.py
-- [ ] T059 [US5] Implement drag-to-select for photos using QRubberBand in PhotoGrid in src/ui/photo_grid.py
-- [ ] T060 [US5] Add selection rectangle using QRubberBand in PhotoGrid in src/ui/photo_grid.py
-- [ ] T061 [US5] Add visual highlighting for selected photos using QItemSelectionModel in PhotoTile in src/ui/widgets/photo_tile.py
-- [ ] T062 [US5] Implement move_photos in PhotoManager with filesystem operations in src/services/photo_manager.py
-- [ ] T063 [US5] Ensure RAW-JPEG pairs move together in PhotoManager in src/services/photo_manager.py
-- [ ] T064 [US5] Add "Move to Album" dialog/menu in PhotoGrid in src/ui/photo_grid.py
-- [ ] T065 [US5] Implement atomic file moves with rollback on failure in src/services/photo_manager.py
-- [ ] T066 [US5] Add UI updates for source and destination albums after move in src/ui/main_window.py
+- [X] T058 [P] [US5] Create PhotoManager service for photo operations in src/services/photo_manager.py
+- [X] T059 [US5] Implement drag-to-select for photos using QRubberBand in PhotoGrid in src/ui/photo_grid.py
+- [X] T060 [US5] Add selection rectangle using QRubberBand in PhotoGrid in src/ui/photo_grid.py
+- [X] T061 [US5] Add visual highlighting for selected photos using QItemSelectionModel in PhotoTile in src/ui/widgets/photo_tile.py
+- [X] T062 [US5] Implement move_photos in PhotoManager with filesystem operations in src/services/photo_manager.py
+- [X] T063 [US5] Ensure RAW-JPEG pairs move together in PhotoManager in src/services/photo_manager.py
+- [X] T064 [US5] Add "Move to Album" dialog/menu in PhotoGrid in src/ui/photo_grid.py
+- [X] T065 [US5] Implement atomic file moves with rollback on failure in src/services/photo_manager.py
+- [X] T066 [US5] Add UI updates for source and destination albums after move in src/ui/main_window.py
 
 **Checkpoint**: All user stories should now be independently functional - full feature set complete
 

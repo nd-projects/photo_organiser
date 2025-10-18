@@ -450,3 +450,263 @@ class TestFileValidator:
         # Handle empty names
         assert FileValidator.sanitize_album_name("") == "Untitled"
         assert FileValidator.sanitize_album_name("   ") == "Untitled"
+
+
+# ==================== Photo Move Tests ====================
+
+class TestPhotoMove:
+    """Tests for photo move operations with atomicity and RAW-JPEG pairing."""
+
+    @pytest.fixture
+    def photo_dir_with_pairs(self, tmp_path):
+        """Create photo directory with RAW-JPEG pairs."""
+        photo_dir = tmp_path / "photos"
+        photo_dir.mkdir()
+
+        # Create source album with RAW-JPEG pairs
+        source = photo_dir / "2024-01-01_Source"
+        source.mkdir()
+
+        # Create RAW-JPEG pair
+        (source / "IMG_001.cr3").write_text("RAW content")
+        (source / "IMG_001.jpg").write_text("JPEG content")
+
+        # Create standalone JPEG
+        (source / "IMG_002.jpg").write_text("Standalone JPEG")
+
+        # Create another RAW-JPEG pair
+        (source / "IMG_003.nef").write_text("NEF RAW content")
+        (source / "IMG_003.jpg").write_text("JPEG for NEF")
+
+        # Create destination album
+        dest = photo_dir / "2024-02-01_Destination"
+        dest.mkdir()
+
+        return photo_dir
+
+    @pytest.fixture
+    def photo_manager_setup(self, photo_dir_with_pairs, tmp_path):
+        """Create PhotoManager with test setup."""
+        from src.services.photo_manager import PhotoManager
+        from src.services.filesystem_scanner import FilesystemScanner
+
+        data_dir = tmp_path / "data"
+        data_dir.mkdir()
+
+        scanner = FilesystemScanner(photo_dir_with_pairs)
+        manager = PhotoManager(scanner)
+
+        return manager, photo_dir_with_pairs
+
+    def test_move_single_photo_succeeds(self, photo_manager_setup):
+        """Test moving a single photo successfully."""
+        manager, photo_dir = photo_manager_setup
+
+        source_album = photo_dir / "2024-01-01_Source"
+        dest_album = photo_dir / "2024-02-01_Destination"
+
+        photo_path = source_album / "IMG_002.jpg"
+
+        # Move photo
+        result = manager.move_photos([photo_path], dest_album)
+
+        # Verify move was successful
+        assert result['success'] is True
+        assert result['moved_count'] == 1
+        assert not photo_path.exists()
+        assert (dest_album / "IMG_002.jpg").exists()
+        assert (dest_album / "IMG_002.jpg").read_text() == "Standalone JPEG"
+
+    def test_move_raw_jpeg_pair_together(self, photo_manager_setup):
+        """Test that RAW-JPEG pairs are moved together (T057)."""
+        manager, photo_dir = photo_manager_setup
+
+        source_album = photo_dir / "2024-01-01_Source"
+        dest_album = photo_dir / "2024-02-01_Destination"
+
+        # Select only the JPEG (manager should detect and move RAW too)
+        jpeg_path = source_album / "IMG_001.jpg"
+
+        # Move photo
+        result = manager.move_photos([jpeg_path], dest_album)
+
+        # Verify both files were moved
+        assert result['success'] is True
+        assert result['moved_count'] == 2  # JPEG + RAW
+
+        # Source should be empty of this pair
+        assert not (source_album / "IMG_001.jpg").exists()
+        assert not (source_album / "IMG_001.cr3").exists()
+
+        # Destination should have both
+        assert (dest_album / "IMG_001.jpg").exists()
+        assert (dest_album / "IMG_001.cr3").exists()
+        assert (dest_album / "IMG_001.jpg").read_text() == "JPEG content"
+        assert (dest_album / "IMG_001.cr3").read_text() == "RAW content"
+
+    def test_move_raw_file_moves_jpeg_pair(self, photo_manager_setup):
+        """Test that selecting RAW file also moves its JPEG pair."""
+        manager, photo_dir = photo_manager_setup
+
+        source_album = photo_dir / "2024-01-01_Source"
+        dest_album = photo_dir / "2024-02-01_Destination"
+
+        # Select the RAW file
+        raw_path = source_album / "IMG_003.nef"
+
+        # Move photo
+        result = manager.move_photos([raw_path], dest_album)
+
+        # Verify both files were moved
+        assert result['success'] is True
+        assert result['moved_count'] == 2  # RAW + JPEG
+
+        # Both files should be in destination
+        assert (dest_album / "IMG_003.nef").exists()
+        assert (dest_album / "IMG_003.jpg").exists()
+
+        # Both files should be gone from source
+        assert not (source_album / "IMG_003.nef").exists()
+        assert not (source_album / "IMG_003.jpg").exists()
+
+    def test_move_multiple_photos_atomically(self, photo_manager_setup):
+        """Test moving multiple photos in a single atomic operation."""
+        manager, photo_dir = photo_manager_setup
+
+        source_album = photo_dir / "2024-01-01_Source"
+        dest_album = photo_dir / "2024-02-01_Destination"
+
+        # Select multiple photos (including one pair)
+        photos = [
+            source_album / "IMG_001.jpg",  # Will also move IMG_001.cr3
+            source_album / "IMG_002.jpg"   # Standalone
+        ]
+
+        # Move photos
+        result = manager.move_photos(photos, dest_album)
+
+        # Verify all moved (3 files total: IMG_001.cr3, IMG_001.jpg, IMG_002.jpg)
+        assert result['success'] is True
+        assert result['moved_count'] == 3
+
+        # Verify destination has all files
+        assert (dest_album / "IMG_001.jpg").exists()
+        assert (dest_album / "IMG_001.cr3").exists()
+        assert (dest_album / "IMG_002.jpg").exists()
+
+    def test_move_photos_rollback_on_failure(self, photo_manager_setup):
+        """Test that move operation rolls back on failure (T056)."""
+        manager, photo_dir = photo_manager_setup
+
+        source_album = photo_dir / "2024-01-01_Source"
+        dest_album = photo_dir / "2024-02-01_Destination"
+
+        # Create a file in destination that will conflict
+        (dest_album / "IMG_002.jpg").write_text("Existing file")
+
+        photos = [
+            source_album / "IMG_001.jpg",
+            source_album / "IMG_002.jpg"  # This will conflict
+        ]
+
+        # Move should fail due to conflict
+        result = manager.move_photos(photos, dest_album)
+
+        # Verify move failed
+        assert result['success'] is False
+        assert 'error' in result
+
+        # Verify rollback: all source files should still exist
+        assert (source_album / "IMG_001.jpg").exists()
+        assert (source_album / "IMG_001.cr3").exists()
+        assert (source_album / "IMG_002.jpg").exists()
+
+        # Destination should only have the original conflicting file
+        assert (dest_album / "IMG_002.jpg").read_text() == "Existing file"
+        # IMG_001 pair should NOT be in destination (rollback)
+        assert not (dest_album / "IMG_001.cr3").exists()
+
+    def test_move_photos_with_name_conflict_reports_error(self, photo_manager_setup):
+        """Test that name conflicts are detected and reported."""
+        manager, photo_dir = photo_manager_setup
+
+        source_album = photo_dir / "2024-01-01_Source"
+        dest_album = photo_dir / "2024-02-01_Destination"
+
+        # Create conflicting file in destination
+        (dest_album / "IMG_001.jpg").write_text("Existing")
+
+        photo_path = source_album / "IMG_001.jpg"
+
+        # Move should fail
+        result = manager.move_photos([photo_path], dest_album)
+
+        assert result['success'] is False
+        assert 'conflict' in result['error'].lower() or 'exists' in result['error'].lower()
+
+    def test_move_photos_to_nonexistent_destination_fails(self, photo_manager_setup):
+        """Test that moving to non-existent destination fails gracefully."""
+        manager, photo_dir = photo_manager_setup
+
+        source_album = photo_dir / "2024-01-01_Source"
+        dest_album = photo_dir / "NonExistent"
+
+        photo_path = source_album / "IMG_002.jpg"
+
+        # Move should fail
+        result = manager.move_photos([photo_path], dest_album)
+
+        assert result['success'] is False
+        assert 'error' in result
+
+        # Source file should still exist
+        assert photo_path.exists()
+
+    def test_move_empty_photo_list_fails(self, photo_manager_setup):
+        """Test that moving empty photo list fails gracefully."""
+        manager, photo_dir = photo_manager_setup
+
+        dest_album = photo_dir / "2024-02-01_Destination"
+
+        # Move empty list
+        result = manager.move_photos([], dest_album)
+
+        assert result['success'] is False
+        assert 'error' in result
+
+    def test_move_photos_preserves_file_content(self, photo_manager_setup):
+        """Test that file content is preserved during move."""
+        manager, photo_dir = photo_manager_setup
+
+        source_album = photo_dir / "2024-01-01_Source"
+        dest_album = photo_dir / "2024-02-01_Destination"
+
+        photo_path = source_album / "IMG_002.jpg"
+        original_content = photo_path.read_text()
+
+        # Move photo
+        result = manager.move_photos([photo_path], dest_album)
+
+        # Verify content preserved
+        assert result['success'] is True
+        assert (dest_album / "IMG_002.jpg").read_text() == original_content
+
+    def test_move_photos_with_partial_pair_only_moves_existing(self, photo_manager_setup):
+        """Test that if only RAW or JPEG exists, only that file is moved."""
+        manager, photo_dir = photo_manager_setup
+
+        source_album = photo_dir / "2024-01-01_Source"
+        dest_album = photo_dir / "2024-02-01_Destination"
+
+        # Create standalone RAW (no JPEG pair)
+        standalone_raw = source_album / "IMG_999.cr3"
+        standalone_raw.write_text("Standalone RAW")
+
+        # Move standalone RAW
+        result = manager.move_photos([standalone_raw], dest_album)
+
+        # Only the RAW should be moved
+        assert result['success'] is True
+        assert result['moved_count'] == 1
+        assert (dest_album / "IMG_999.cr3").exists()
+        assert not (dest_album / "IMG_999.jpg").exists()  # No pair

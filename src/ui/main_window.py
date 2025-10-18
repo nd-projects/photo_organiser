@@ -87,6 +87,7 @@ class MainWindow(QMainWindow):
             on_photo_click=lambda photo, idx: None,  # Handle click (future)
             on_photo_double_click=self._handle_photo_double_click
         )
+        self.photo_grid.move_photos_requested.connect(self._handle_move_photos)
         self.photo_grid.hide()
         main_layout.addWidget(self.photo_grid, 1)  # Stretch factor 1
 
@@ -243,6 +244,57 @@ class MainWindow(QMainWindow):
             lightbox.exec()  # Modal dialog
         except Exception as e:
             self.show_error("Error", f"Could not open photo: {e}")
+
+    def _handle_move_photos(self, photo_paths: list[Path], destination_album: Album):
+        """Handle request to move photos to another album.
+
+        Args:
+            photo_paths: List of photo file paths to move
+            destination_album: Destination album
+        """
+        try:
+            # Import PhotoManager
+            from ..services.photo_manager import PhotoManager
+            from ..services.filesystem_scanner import FilesystemScanner
+
+            # Create photo manager
+            scanner = FilesystemScanner(self.app_state.photo_dir)
+            photo_manager = PhotoManager(scanner)
+
+            # Execute move
+            result = photo_manager.move_photos(photo_paths, destination_album.path)
+
+            if result['success']:
+                # Show success message
+                moved_count = result['moved_count']
+                QMessageBox.information(
+                    self,
+                    "Photos Moved",
+                    f"Successfully moved {moved_count} file(s) to {destination_album.name}"
+                )
+
+                # Refresh both source and destination albums
+                # Go back to album view and trigger a refresh
+                self._handle_back_to_albums()
+
+                # Emit signal to refresh albums (if callback is set)
+                if hasattr(self, 'on_photos_moved'):
+                    self.on_photos_moved(destination_album)
+
+            else:
+                # Show error message
+                QMessageBox.critical(
+                    self,
+                    "Move Failed",
+                    f"Failed to move photos:\n\n{result['error']}"
+                )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"An error occurred while moving photos:\n\n{str(e)}"
+            )
 
     def _toggle_fullscreen(self):
         """Toggle fullscreen mode."""
@@ -459,6 +511,7 @@ class MainWindow(QMainWindow):
         self._current_photos = photos
 
         self.photo_grid.set_album(album)
+        self.photo_grid.set_available_albums(self._all_albums)
         self.photo_grid.set_photos(photos)
 
         self._show_photo_view()

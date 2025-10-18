@@ -6,10 +6,11 @@ Supports RAW-JPEG deduplication, selection, and lightbox viewing.
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QLabel,
-    QRubberBand, QApplication
+    QRubberBand, QApplication, QMenu, QDialog, QDialogButtonBox,
+    QListView, QMessageBox
 )
 from PyQt6.QtCore import Qt, QSize, QRect, QPoint, pyqtSignal
-from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor
+from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor, QAction
 from typing import Optional, Callable, List
 from pathlib import Path
 
@@ -33,6 +34,7 @@ class PhotoGrid(QWidget):
     photo_clicked = pyqtSignal(object, int)  # (Photo/PhotoPair, index)
     photo_double_clicked = pyqtSignal(object, int)  # (Photo/PhotoPair, index)
     selection_changed = pyqtSignal(list)  # List of selected indices
+    move_photos_requested = pyqtSignal(list, object)  # (photo_paths, destination_album)
 
     def __init__(
         self,
@@ -57,6 +59,7 @@ class PhotoGrid(QWidget):
         self._album: Optional[Album] = None
         self._showing_empty_state = False
         self._selected_indices: List[int] = []
+        self._available_albums: List[Album] = []  # For move dialog
 
         # Rubber band for drag selection
         self._rubber_band: Optional[QRubberBand] = None
@@ -94,6 +97,10 @@ class PhotoGrid(QWidget):
         # Enable grid flow
         self.list_widget.setFlow(QListWidget.Flow.LeftToRight)
         self.list_widget.setWrapping(True)
+
+        # Enable context menu
+        self.list_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.list_widget.customContextMenuRequested.connect(self._show_context_menu)
 
         # Connect item interactions
         self.list_widget.itemClicked.connect(self._handle_item_click)
@@ -477,6 +484,122 @@ class PhotoGrid(QWidget):
             Album object or None
         """
         return self._album
+
+    def set_available_albums(self, albums: List[Album]):
+        """Set the list of available albums for move operations.
+
+        Args:
+            albums: List of Album objects
+        """
+        self._available_albums = albums
+
+    def _show_context_menu(self, position: QPoint):
+        """Show context menu for selected photos.
+
+        Args:
+            position: Position where menu was requested
+        """
+        # Only show menu if there are selected photos
+        if not self._selected_indices:
+            return
+
+        menu = QMenu(self)
+
+        # Move to album action
+        move_action = QAction("Move to Album...", self)
+        move_action.triggered.connect(self._handle_move_to_album)
+        menu.addAction(move_action)
+
+        # Show menu at cursor position
+        menu.exec(self.list_widget.mapToGlobal(position))
+
+    def _handle_move_to_album(self):
+        """Handle move to album action from context menu."""
+        # Get selected photos
+        selected_photos = self.get_selected_photos()
+        if not selected_photos:
+            return
+
+        # Show album selection dialog
+        destination_album = self._show_album_selection_dialog()
+        if destination_album is None:
+            return  # User cancelled
+
+        # Get file paths from photos/pairs
+        photo_paths = []
+        for photo_or_pair in selected_photos:
+            if isinstance(photo_or_pair, PhotoPair):
+                # Add JPEG path (manager will detect and move RAW too)
+                photo_paths.append(photo_or_pair.display_path)
+            elif isinstance(photo_or_pair, Photo):
+                photo_paths.append(photo_or_pair.path)
+
+        # Emit signal to request move
+        self.move_photos_requested.emit(photo_paths, destination_album)
+
+    def _show_album_selection_dialog(self) -> Optional[Album]:
+        """Show dialog to select destination album.
+
+        Returns:
+            Selected Album or None if cancelled
+        """
+        # Filter out current album from available albums
+        available = [
+            album for album in self._available_albums
+            if album.path != self._album.path
+        ] if self._album else self._available_albums
+
+        if not available:
+            QMessageBox.warning(
+                self,
+                "No Albums Available",
+                "There are no other albums to move photos to.\n\n"
+                "Create another album first."
+            )
+            return None
+
+        # Create dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Select Destination Album")
+        dialog.setModal(True)
+        dialog.resize(400, 300)
+
+        layout = QVBoxLayout(dialog)
+
+        # Instructions
+        label = QLabel(f"Select album to move {len(self._selected_indices)} photo(s) to:")
+        layout.addWidget(label)
+
+        # Album list
+        album_list = QListWidget()
+        album_list.setViewMode(QListWidget.ViewMode.ListMode)
+
+        for album in available:
+            item = QListWidgetItem(album.display_name)
+            item.setData(Qt.ItemDataRole.UserRole, album)
+            album_list.addItem(item)
+
+        layout.addWidget(album_list)
+
+        # Buttons
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok |
+            QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+
+        # Handle double-click to select
+        album_list.itemDoubleClicked.connect(dialog.accept)
+
+        # Show dialog
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            selected_items = album_list.selectedItems()
+            if selected_items:
+                return selected_items[0].data(Qt.ItemDataRole.UserRole)
+
+        return None
 
     def __str__(self) -> str:
         """String representation."""
