@@ -47,27 +47,63 @@ uv --version
 ### 3. Create Virtual Environment and Install Dependencies
 
 ```bash
-# Create virtual environment and install dependencies
-uv sync
+# Create virtual environment and install dependencies (including dev dependencies for testing)
+uv sync --extra dev
 
-# Activate virtual environment
+# Note: If you only need runtime dependencies (no testing/linting):
+# uv sync
+
+# Activate virtual environment (optional - uv run handles this automatically)
 source .venv/bin/activate
 ```
 
 ### 4. Configure Application
 
-Create a configuration file (optional, can also use CLI argument):
+You can configure the application using either a TOML configuration file or command-line arguments:
+
+#### Option 1: Configuration File (Recommended)
+
+Create a configuration file for persistent settings:
 
 ```bash
-# Create data directory
-mkdir -p data
+# Create an example config file
+uv run python -m src.main --create-config config.toml
 
-# Configure photo directory path
-# Option 1: Environment variable
+# Edit the config file with your photo directory
+# The application will automatically find config.toml in the current directory
+```
+
+Example `config.toml`:
+
+```toml
+# Photo directory (required)
+photo_dir = "/media/nick/Photo_Backups/Camera_Photos"
+
+# Optional settings
+log_level = "INFO"
+# state_file = "~/.local/share/photo-organizer/app_state.json"
+# cache_dir = "~/.cache/photo-organizer/thumbnails"
+# log_file = "~/.local/share/photo-organizer/app.log"
+```
+
+Config file search locations (in order):
+
+1. Path specified with `--config` argument
+2. `./config.toml` (current directory)
+3. `~/.config/photo-organizer/config.toml`
+4. `/etc/photo-organizer/config.toml`
+
+#### Option 2: Command-Line Arguments
+
+You can also specify configuration via CLI arguments (these override config file settings):
+
+```bash
+# Using CLI arguments only
+uv run python -m src.main --photo-dir /path/to/photos
+
+# Or use environment variable
 export PHOTO_DIR="/media/nick/Photo_Backups/Camera_Photos"
-
-# Option 2: Edit config file (future feature)
-# echo "photo_dir = '/path/to/photos'" > config.toml
+uv run python -m src.main
 ```
 
 ## Running the Application
@@ -76,10 +112,13 @@ export PHOTO_DIR="/media/nick/Photo_Backups/Camera_Photos"
 
 ```bash
 # Run with default photo directory from environment
-uv run python src/main.py
+uv run python -m src.main
 
 # Or specify photo directory as argument
-uv run python src/main.py --photo-dir /path/to/photos
+uv run python -m src.main --photo-dir /path/to/photos
+
+# To see all available options
+uv run python -m src.main --help
 ```
 
 ### Production Mode
@@ -206,33 +245,50 @@ uv sync --upgrade
 
 ## Configuration
 
+### Configuration File vs. Command-Line Arguments
+
+The application supports two configuration methods:
+
+1. **Configuration file** (TOML format) - Recommended for persistent settings
+2. **Command-line arguments** - Override config file settings
+
+CLI arguments always take precedence over config file settings.
+
 ### Photo Directory
 
-The application needs to know where your photos are stored. You can specify this in three ways:
+The application needs to know where your photos are stored. You can specify this in multiple ways (in order of precedence):
 
 1. **Command-line argument** (highest priority):
 
    ```bash
-   uv run python src/main.py --photo-dir /path/to/photos
+   uv run python -m src.main --photo-dir /path/to/photos
    ```
 
-2. **Environment variable**:
+2. **Configuration file**:
+
+   ```bash
+   # Create config.toml
+   echo 'photo_dir = "/path/to/photos"' > config.toml
+   uv run python -m src.main
+   ```
+
+3. **Environment variable**:
 
    ```bash
    export PHOTO_DIR="/path/to/photos"
-   uv run python src/main.py
+   uv run python -m src.main
    ```
-
-3. **Interactive prompt** (fallback):
-   If neither is provided, the application will prompt you to select a directory on first launch.
 
 ### Thumbnail Cache
 
 Thumbnails are cached in `data/thumbnails/` by default. To change this:
 
 ```bash
-# Use custom cache directory
-uv run python src/main.py --cache-dir /path/to/cache
+# Option 1: Configuration file
+echo 'cache_dir = "~/.cache/photo-organizer/thumbnails"' >> config.toml
+
+# Option 2: Command-line argument
+uv run python -m src.main --cache-dir /path/to/cache
 ```
 
 To clear the cache:
@@ -241,16 +297,26 @@ To clear the cache:
 rm -rf data/thumbnails/*
 ```
 
-### Database
+### Application State
 
-Application state is stored in `data/app.db` (SQLite). To reset:
+Application state is stored in `data/app_state.json` (album ordering, etc.). To reset:
 
 ```bash
 # Backup current state
-cp data/app.db data/app.db.backup
+cp data/app_state.json data/app_state.json.backup
 
-# Reset database (will lose custom album ordering)
-rm data/app.db
+# Reset state (will lose custom album ordering)
+rm data/app_state.json
+```
+
+To use a different location for the state file:
+
+```bash
+# Option 1: Configuration file
+echo 'state_file = "~/.local/share/photo-organizer/app_state.json"' >> config.toml
+
+# Option 2: Command-line argument
+uv run python -m src.main --state-file /path/to/state.json
 ```
 
 ## Keyboard Shortcuts
@@ -344,9 +410,9 @@ rm -rf data/thumbnails/*
 ## Getting Help
 
 - Check the [GitHub Issues](../../issues) for known problems
-- Review logs in `data/logs/` for error details
-- Enable debug mode: `uv run python src/main.py --debug`
+- Review logs in `data/logs/` for error details (if logging to file is enabled)
+- Enable debug mode: `uv run python -m src.main --log-level DEBUG`
 
 ---
 
-**Ready to start developing?** Run `uv run python src/main.py` and point it to your photo directory!
+**Ready to start developing?** Run `uv run python -m src.main --photo-dir /path/to/photos` and start organizing your photos!

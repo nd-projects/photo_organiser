@@ -187,15 +187,15 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T067 [P] Add keyboard shortcuts (Ctrl+Q quit, Escape back, F11 fullscreen) in src/ui/main_window.py
-- [ ] T068 [P] Add loading indicators for long operations in src/ui/main_window.py
-- [ ] T069 [P] Implement error state display for unavailable photo directory in src/ui/main_window.py
-- [ ] T070 [P] Add empty state messages (empty album, no albums) in src/ui/album_grid.py and src/ui/photo_grid.py
-- [ ] T071 [P] Create README.md with setup instructions and usage
-- [ ] T072 Performance optimization: Profile and optimize virtual scrolling for 500+ albums
-- [ ] T073 Code cleanup: Remove debug logging and add production logging configuration
-- [ ] T074 Validate quickstart.md instructions by following setup steps
-- [ ] T075 Add configuration file support (optional alternative to CLI args)
+- [X] T067 [P] Add keyboard shortcuts (Ctrl+Q quit, Escape back, F11 fullscreen) in src/ui/main_window.py
+- [X] T068 [P] Add loading indicators for long operations in src/ui/main_window.py
+- [X] T069 [P] Implement error state display for unavailable photo directory in src/ui/main_window.py
+- [X] T070 [P] Add empty state messages (empty album, no albums) in src/ui/album_grid.py and src/ui/photo_grid.py
+- [X] T071 [P] Create README.md with setup instructions and usage
+- [X] T072 Performance optimization: Profile and optimize virtual scrolling for 500+ albums
+- [X] T073 Code cleanup: Remove debug logging and add production logging configuration
+- [X] T074 Validate quickstart.md instructions by following setup steps
+- [X] T075 Add configuration file support (optional alternative to CLI args)
 
 ---
 

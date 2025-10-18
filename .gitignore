@@ -76,3 +76,6 @@ data/
 
 # OS files
 Thumbs.db
+
+# User data
+config.toml

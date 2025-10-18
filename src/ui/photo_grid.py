@@ -65,6 +65,10 @@ class PhotoGrid(QWidget):
         self._rubber_band: Optional[QRubberBand] = None
         self._rubber_band_origin: Optional[QPoint] = None
 
+        # Performance optimization: Cache placeholder/error pixmaps
+        self._placeholder_pixmap: Optional[QPixmap] = None
+        self._error_pixmap: Optional[QPixmap] = None
+
         # Create UI
         self._create_widgets()
 
@@ -181,48 +185,54 @@ class PhotoGrid(QWidget):
         Args:
             photos: List of Photo or PhotoPair objects
         """
-        self.list_widget.clear()
+        # Performance optimization: Disable updates during bulk operations
+        self.list_widget.setUpdatesEnabled(False)
+        try:
+            self.list_widget.clear()
 
-        for idx, photo_or_pair in enumerate(photos):
-            item = QListWidgetItem()
+            for idx, photo_or_pair in enumerate(photos):
+                item = QListWidgetItem()
 
-            # Store photo/pair in item data
-            item.setData(Qt.ItemDataRole.UserRole, photo_or_pair)
+                # Store photo/pair in item data
+                item.setData(Qt.ItemDataRole.UserRole, photo_or_pair)
 
-            # Get display path
-            display_path = self._get_display_path(photo_or_pair)
+                # Get display path
+                display_path = self._get_display_path(photo_or_pair)
 
-            # Set thumbnail (placeholder for now, actual thumbnails loaded later)
-            thumbnail_path = self._get_thumbnail_path(photo_or_pair)
-            if thumbnail_path and thumbnail_path.exists():
-                pixmap = QPixmap(str(thumbnail_path))
-                if not pixmap.isNull():
-                    # Scale to fit icon size
-                    scaled = pixmap.scaled(
-                        140, 140,
-                        Qt.AspectRatioMode.KeepAspectRatio,
-                        Qt.TransformationMode.SmoothTransformation
-                    )
+                # Set thumbnail (placeholder for now, actual thumbnails loaded later)
+                thumbnail_path = self._get_thumbnail_path(photo_or_pair)
+                if thumbnail_path and thumbnail_path.exists():
+                    pixmap = QPixmap(str(thumbnail_path))
+                    if not pixmap.isNull():
+                        # Scale to fit icon size
+                        scaled = pixmap.scaled(
+                            140, 140,
+                            Qt.AspectRatioMode.KeepAspectRatio,
+                            Qt.TransformationMode.SmoothTransformation
+                        )
 
-                    # Add RAW badge if this is a pair
-                    if isinstance(photo_or_pair, PhotoPair) and photo_or_pair.has_raw:
-                        scaled = self._add_raw_badge(scaled)
+                        # Add RAW badge if this is a pair
+                        if isinstance(photo_or_pair, PhotoPair) and photo_or_pair.has_raw:
+                            scaled = self._add_raw_badge(scaled)
 
-                    item.setIcon(QIcon(scaled))
+                        item.setIcon(QIcon(scaled))
+                    else:
+                        item.setIcon(QIcon(self._get_error_pixmap()))
                 else:
-                    item.setIcon(QIcon(self._create_error_pixmap()))
-            else:
-                # Placeholder
-                item.setIcon(QIcon(self._create_placeholder_pixmap()))
+                    # Placeholder
+                    item.setIcon(QIcon(self._get_placeholder_pixmap()))
 
-            # Set filename as text (optional, can be hidden)
-            if display_path:
-                item.setText(display_path.name)
+                # Set filename as text (optional, can be hidden)
+                if display_path:
+                    item.setText(display_path.name)
 
-            # Set size hint
-            item.setSizeHint(QSize(150, 170))
+                # Set size hint
+                item.setSizeHint(QSize(150, 170))
 
-            self.list_widget.addItem(item)
+                self.list_widget.addItem(item)
+        finally:
+            # Re-enable updates after all items added
+            self.list_widget.setUpdatesEnabled(True)
 
     def _get_display_path(self, photo_or_pair) -> Optional[Path]:
         """Get display path from Photo or PhotoPair.
@@ -265,6 +275,26 @@ class PhotoGrid(QWidget):
             cache = ThumbnailCache(cache_dir)
             return cache.get(photo_or_pair.path, (150, 150))
         return None
+
+    def _get_placeholder_pixmap(self) -> QPixmap:
+        """Get cached placeholder pixmap (create on first call).
+
+        Returns:
+            Placeholder pixmap
+        """
+        if self._placeholder_pixmap is None:
+            self._placeholder_pixmap = self._create_placeholder_pixmap()
+        return self._placeholder_pixmap
+
+    def _get_error_pixmap(self) -> QPixmap:
+        """Get cached error pixmap (create on first call).
+
+        Returns:
+            Error pixmap
+        """
+        if self._error_pixmap is None:
+            self._error_pixmap = self._create_error_pixmap()
+        return self._error_pixmap
 
     def _create_placeholder_pixmap(self) -> QPixmap:
         """Create placeholder pixmap for loading state.

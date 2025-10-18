@@ -341,6 +341,10 @@ class AlbumGrid(QWidget):
         self._showing_empty_state = False
         self._drag_start_position: Optional[QPoint] = None
 
+        # Performance optimization: Cache placeholder/error pixmaps
+        self._placeholder_pixmap: Optional[QPixmap] = None
+        self._error_pixmap: Optional[QPixmap] = None
+
         # Create UI
         self._create_widgets()
 
@@ -475,44 +479,50 @@ class AlbumGrid(QWidget):
         Args:
             albums: List of albums to display
         """
-        self.list_widget.clear()
+        # Performance optimization: Disable updates during bulk operations
+        self.list_widget.setUpdatesEnabled(False)
+        try:
+            self.list_widget.clear()
 
-        for album in albums:
-            item = QListWidgetItem()
+            for album in albums:
+                item = QListWidgetItem()
 
-            # Set album data
-            item.setData(Qt.ItemDataRole.UserRole, album)
+                # Set album data
+                item.setData(Qt.ItemDataRole.UserRole, album)
 
-            # Set text (album name and date)
-            text = album.name
-            if album.date:
-                text += f"\n{album.date_string}"
-            else:
-                text += "\nUnknown Date"
-            text += f"\n{album.photo_count} photos"
-            item.setText(text)
-
-            # Set icon/thumbnail
-            if album.thumbnail_path and album.thumbnail_path.exists():
-                pixmap = QPixmap(str(album.thumbnail_path))
-                if not pixmap.isNull():
-                    # Scale to fit icon size while maintaining aspect ratio
-                    scaled = pixmap.scaled(
-                        180, 180,
-                        Qt.AspectRatioMode.KeepAspectRatio,
-                        Qt.TransformationMode.SmoothTransformation
-                    )
-                    item.setIcon(QIcon(scaled))
+                # Set text (album name and date)
+                text = album.name
+                if album.date:
+                    text += f"\n{album.date_string}"
                 else:
-                    item.setIcon(QIcon(self._create_error_pixmap()))
-            else:
-                # Placeholder
-                item.setIcon(QIcon(self._create_placeholder_pixmap()))
+                    text += "\nUnknown Date"
+                text += f"\n{album.photo_count} photos"
+                item.setText(text)
 
-            # Set size hint
-            item.setSizeHint(QSize(200, 240))
+                # Set icon/thumbnail
+                if album.thumbnail_path and album.thumbnail_path.exists():
+                    pixmap = QPixmap(str(album.thumbnail_path))
+                    if not pixmap.isNull():
+                        # Scale to fit icon size while maintaining aspect ratio
+                        scaled = pixmap.scaled(
+                            180, 180,
+                            Qt.AspectRatioMode.KeepAspectRatio,
+                            Qt.TransformationMode.SmoothTransformation
+                        )
+                        item.setIcon(QIcon(scaled))
+                    else:
+                        item.setIcon(QIcon(self._get_error_pixmap()))
+                else:
+                    # Placeholder
+                    item.setIcon(QIcon(self._get_placeholder_pixmap()))
 
-            self.list_widget.addItem(item)
+                # Set size hint
+                item.setSizeHint(QSize(200, 240))
+
+                self.list_widget.addItem(item)
+        finally:
+            # Re-enable updates after all items added
+            self.list_widget.setUpdatesEnabled(True)
 
     def get_albums(self) -> List[Album]:
         """Get currently displayed albums.
@@ -689,6 +699,26 @@ class AlbumGrid(QWidget):
         """
         filtered = [album for album in self._albums if filter_func(album)]
         self.set_albums(filtered)
+
+    def _get_placeholder_pixmap(self) -> QPixmap:
+        """Get cached placeholder pixmap (create on first call).
+
+        Returns:
+            Placeholder pixmap
+        """
+        if self._placeholder_pixmap is None:
+            self._placeholder_pixmap = self._create_placeholder_pixmap()
+        return self._placeholder_pixmap
+
+    def _get_error_pixmap(self) -> QPixmap:
+        """Get cached error pixmap (create on first call).
+
+        Returns:
+            Error pixmap
+        """
+        if self._error_pixmap is None:
+            self._error_pixmap = self._create_error_pixmap()
+        return self._error_pixmap
 
     def _create_placeholder_pixmap(self) -> QPixmap:
         """Create placeholder pixmap for loading state.

@@ -3,7 +3,8 @@
 Displays the album grid and handles top-level UI interactions.
 """
 
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QStatusBar, QMessageBox
+from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+                             QStatusBar, QMessageBox)
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QKeySequence, QShortcut, QScreen
 from typing import Optional, Callable
@@ -53,6 +54,7 @@ class MainWindow(QMainWindow):
         self._current_photos: list = []  # List[Photo | PhotoPair]
         self._is_fullscreen = False
         self._all_albums: list[Album] = []  # Store all albums before filtering
+        self._loading_overlay: Optional[QWidget] = None
 
         # Load settings
         settings = app_state.load_settings()
@@ -462,17 +464,79 @@ class MainWindow(QMainWindow):
         )
         return reply == QMessageBox.StandardButton.Yes
 
-    def show_loading(self, message: str = "Loading..."):
+    def show_loading(self, message: str = "Loading...", max_value: int = 0):
         """Show loading indicator.
 
         Args:
             message: Loading message
+            max_value: Maximum progress value (0 for indeterminate)
         """
         self.set_status(message)
-        # TODO: Add visual loading indicator
+
+        # Create loading overlay if it doesn't exist
+        if self._loading_overlay is None:
+            from PyQt6.QtCore import Qt
+
+            # Create semi-transparent overlay
+            self._loading_overlay = QWidget(self.centralWidget())
+            self._loading_overlay.setStyleSheet("""
+                QWidget {
+                    background-color: rgba(0, 0, 0, 0.5);
+                }
+            """)
+
+            # Create layout for overlay
+            overlay_layout = QVBoxLayout(self._loading_overlay)
+            overlay_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            # Create loading label
+            loading_label = QLabel(message)
+            loading_label.setStyleSheet("""
+                QLabel {
+                    background-color: white;
+                    color: #333;
+                    padding: 20px 40px;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: bold;
+                }
+            """)
+            loading_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            overlay_layout.addWidget(loading_label)
+
+            # Store reference to label for updates
+            self._loading_overlay._label = loading_label
+        else:
+            # Update message
+            self._loading_overlay._label.setText(message)
+
+        # Resize overlay to match central widget
+        self._loading_overlay.setGeometry(self.centralWidget().rect())
+        self._loading_overlay.raise_()
+        self._loading_overlay.show()
+
+        # Process events to show the overlay immediately
+        from PyQt6.QtWidgets import QApplication
+        QApplication.processEvents()
+
+    def update_loading_progress(self, value: int, message: str = None):
+        """Update loading progress.
+
+        Args:
+            value: Current progress value
+            message: Optional message update
+        """
+        if message:
+            self.set_status(message)
+            if self._loading_overlay and hasattr(self._loading_overlay, '_label'):
+                self._loading_overlay._label.setText(message)
+                from PyQt6.QtWidgets import QApplication
+                QApplication.processEvents()
 
     def hide_loading(self):
         """Hide loading indicator."""
+        if self._loading_overlay:
+            self._loading_overlay.hide()
         self._update_status()
 
     def set_window_title(self, title: str):
@@ -521,6 +585,39 @@ class MainWindow(QMainWindow):
         self.photo_grid.clear()
         self._current_photos.clear()
         self._update_photo_status()
+
+    def show_directory_error(self, directory: Path, error_message: str = None):
+        """Show error state when photo directory is unavailable.
+
+        Args:
+            directory: Photo directory that is unavailable
+            error_message: Optional custom error message
+        """
+        if error_message is None:
+            error_message = (
+                f"The photo directory is not accessible:\n\n{directory}\n\n"
+                f"Please ensure:\n"
+                f"• The directory exists\n"
+                f"• You have read permissions\n"
+                f"• The drive is mounted (if network/external)\n\n"
+                f"The application will now close."
+            )
+
+        QMessageBox.critical(
+            self,
+            "Photo Directory Unavailable",
+            error_message
+        )
+
+    def resizeEvent(self, event):
+        """Handle window resize to update overlay size.
+
+        Args:
+            event: Resize event
+        """
+        super().resizeEvent(event)
+        if self._loading_overlay and self._loading_overlay.isVisible():
+            self._loading_overlay.setGeometry(self.centralWidget().rect())
 
     def __str__(self) -> str:
         """String representation."""
