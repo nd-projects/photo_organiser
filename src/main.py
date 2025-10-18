@@ -97,6 +97,10 @@ class PhotoOrganizerApp:
             self._handle_revert_to_chronological
         )
 
+        # Connect album creation and rename signals
+        self.window.album_grid.create_album_requested.connect(self._handle_create_album)
+        self.window.album_grid.rename_album_requested.connect(self._handle_rename_album)
+
         # Load albums
         print("Loading albums...")
         self.window.show_loading("Loading albums...")
@@ -182,11 +186,6 @@ class PhotoOrganizerApp:
             albums: Updated albums list
         """
         if self.window:
-            import traceback
-            print(f"Albums changed: {len(albums)} albums")
-            print("Call stack:")
-            for line in traceback.format_stack()[:-1]:
-                print(line.strip())
             self.window.show_albums(albums)
 
     def _handle_albums_reordered(self, albums: list[Album]):
@@ -217,6 +216,113 @@ class PhotoOrganizerApp:
         # The albums_changed callback will update the UI
         if self.window:
             self.window.set_status("Reverted to chronological order")
+
+    def _handle_create_album(self, album_name: str):
+        """Handle request to create a new album.
+
+        Args:
+            album_name: Name for the new album
+        """
+        from .utils.file_validator import FileValidator
+
+        print(f"Creating album: {album_name}")
+
+        if not self.window:
+            return
+
+        try:
+            # Validate album name and check availability
+            is_valid, error_msg = FileValidator.validate_and_check_availability(
+                self.photo_dir,
+                album_name
+            )
+
+            if not is_valid:
+                # Show error message
+                self.window.album_grid.show_error("Invalid Album Name", error_msg)
+                return
+
+            # Create album
+            album = self.album_manager.create_album(album_name)
+
+            if album:
+                print(f"Album created successfully: {album_name}")
+                self.window.set_status(f"Created album: {album_name}")
+                # Refresh the album list
+                albums = self.album_manager.get_albums()
+                self.window.show_albums(albums)
+            else:
+                self.window.album_grid.show_error(
+                    "Error Creating Album",
+                    f"Could not create album '{album_name}'"
+                )
+
+        except ValueError as e:
+            # Handle validation errors from album_manager
+            self.window.album_grid.show_error("Invalid Album Name", str(e))
+        except Exception as e:
+            print(f"Error creating album: {e}")
+            import traceback
+            traceback.print_exc()
+            self.window.album_grid.show_error(
+                "Error Creating Album",
+                f"An unexpected error occurred:\n\n{str(e)}"
+            )
+
+    def _handle_rename_album(self, album: Album, new_name: str):
+        """Handle request to rename an album.
+
+        Args:
+            album: Album to rename
+            new_name: New name for the album
+        """
+        from .utils.file_validator import FileValidator
+
+        print(f"Renaming album '{album.name}' to '{new_name}'")
+
+        if not self.window:
+            return
+
+        try:
+            # Validate new name
+            is_valid, error_msg = FileValidator.validate_album_name(new_name)
+            if not is_valid:
+                self.window.album_grid.show_error("Invalid Album Name", error_msg)
+                return
+
+            # Check if new name is available (if different from current name)
+            if new_name != album.name:
+                if not FileValidator.is_album_name_available(self.photo_dir, new_name):
+                    self.window.album_grid.show_error(
+                        "Album Already Exists",
+                        f"An album with the name '{new_name}' already exists."
+                    )
+                    return
+
+            # Rename album
+            success = self.album_manager.rename_album(album, new_name)
+
+            if success:
+                print(f"Album renamed successfully: '{album.name}' -> '{new_name}'")
+                self.window.set_status(f"Renamed album to: {new_name}")
+                # The albums_changed callback will update the UI
+            else:
+                self.window.album_grid.show_error(
+                    "Error Renaming Album",
+                    f"Could not rename album to '{new_name}'"
+                )
+
+        except ValueError as e:
+            # Handle validation errors from album_manager
+            self.window.album_grid.show_error("Invalid Album Name", str(e))
+        except Exception as e:
+            print(f"Error renaming album: {e}")
+            import traceback
+            traceback.print_exc()
+            self.window.album_grid.show_error(
+                "Error Renaming Album",
+                f"An unexpected error occurred:\n\n{str(e)}"
+            )
 
 
 

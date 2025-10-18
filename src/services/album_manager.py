@@ -15,6 +15,7 @@ from datetime import datetime, date
 from ..models.album import Album
 from ..models.photo import Photo, PhotoPair
 from ..models.app_state import AppState
+from ..utils.file_validator import FileValidator
 from .filesystem_scanner import FilesystemScanner
 from .photo_processor import PhotoProcessor
 
@@ -436,20 +437,9 @@ class AlbumManager:
         Returns:
             True if valid, False otherwise
         """
-        if not name or len(name) == 0:
-            return False
-
-        # Check for invalid characters
-        invalid_chars = ['/', '\\', ':', '*', '?', '"', '<', '>', '|']
-        for char in invalid_chars:
-            if char in name:
-                return False
-
-        # Check for hidden directory
-        if name.startswith('.'):
-            return False
-
-        return True
+        # Use FileValidator for comprehensive validation
+        is_valid, _ = FileValidator.validate_album_name(name)
+        return is_valid
 
     # ==================== Observer Pattern ====================
 

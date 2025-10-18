@@ -6,7 +6,7 @@ Supports drag-and-drop reordering of albums.
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QLabel,
-    QPushButton, QHBoxLayout, QMessageBox
+    QPushButton, QHBoxLayout, QMessageBox, QInputDialog, QLineEdit, QMenu
 )
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QPoint, QTimer, QRect
 from PyQt6.QtGui import QIcon, QPixmap, QDragEnterEvent, QDropEvent, QDragMoveEvent, QPainter, QColor, QPen
@@ -312,6 +312,12 @@ class AlbumGrid(QWidget):
     # Signal emitted when user requests to revert to chronological order
     revert_to_chronological_requested = pyqtSignal()
 
+    # Signal emitted when user requests to create a new album
+    create_album_requested = pyqtSignal(str)  # Emits album name
+
+    # Signal emitted when user requests to rename an album
+    rename_album_requested = pyqtSignal(Album, str)  # Emits (album, new_name)
+
     def __init__(
         self,
         parent=None,
@@ -347,19 +353,25 @@ class AlbumGrid(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # Add toolbar with revert button
-        if self._drag_drop_enabled:
-            toolbar_layout = QHBoxLayout()
-            toolbar_layout.setContentsMargins(10, 5, 10, 5)
+        # Add toolbar with buttons
+        toolbar_layout = QHBoxLayout()
+        toolbar_layout.setContentsMargins(10, 5, 10, 5)
 
-            # Revert to chronological button
+        # Create New Album button (always visible)
+        self.create_button = QPushButton("+ Create New Album")
+        self.create_button.setToolTip("Create a new album")
+        self.create_button.clicked.connect(self._handle_create_album)
+        toolbar_layout.addWidget(self.create_button)
+
+        # Revert to chronological button (only if drag-drop enabled)
+        if self._drag_drop_enabled:
             self.revert_button = QPushButton("↻ Reset to Chronological Order")
             self.revert_button.setToolTip("Revert custom ordering and sort by date")
             self.revert_button.clicked.connect(self._handle_revert_to_chronological)
             toolbar_layout.addWidget(self.revert_button)
 
-            toolbar_layout.addStretch()
-            layout.addLayout(toolbar_layout)
+        toolbar_layout.addStretch()
+        layout.addLayout(toolbar_layout)
 
         # Custom QListWidget in Icon mode for grid display with enhanced drag-drop
         self.list_widget = AlbumListWidget()
@@ -399,6 +411,10 @@ class AlbumGrid(QWidget):
         # Connect item click
         self.list_widget.itemClicked.connect(self._handle_item_click)
 
+        # Enable context menu
+        self.list_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.list_widget.customContextMenuRequested.connect(self._show_context_menu)
+
         layout.addWidget(self.list_widget)
 
         # Empty state label (hidden by default)
@@ -421,6 +437,23 @@ class AlbumGrid(QWidget):
         album = item.data(Qt.ItemDataRole.UserRole)
         if album:
             self.album_clicked.emit(album)
+
+    def keyPressEvent(self, event):
+        """Handle key press events.
+
+        Args:
+            event: Key press event
+        """
+        if event.key() == Qt.Key.Key_F2:
+            # F2 pressed - rename selected album
+            current_item = self.list_widget.currentItem()
+            if current_item:
+                album = current_item.data(Qt.ItemDataRole.UserRole)
+                if album:
+                    self._handle_rename_album(album)
+            event.accept()
+        else:
+            super().keyPressEvent(event)
 
     def set_albums(self, albums: List[Album]):
         """Set albums to display in the grid.
@@ -744,6 +777,90 @@ class AlbumGrid(QWidget):
 
         if reply == QMessageBox.StandardButton.Yes:
             self.revert_to_chronological_requested.emit()
+
+    def _handle_create_album(self):
+        """Handle create new album button click."""
+        # Show input dialog for album name
+        album_name, ok = QInputDialog.getText(
+            self,
+            "Create New Album",
+            "Enter album name:",
+            QLineEdit.EchoMode.Normal,
+            ""
+        )
+
+        if ok and album_name:
+            # Emit signal with the album name
+            # The main window will handle validation and actual creation
+            self.create_album_requested.emit(album_name.strip())
+
+    def show_error(self, title: str, message: str):
+        """Show an error message dialog.
+
+        Args:
+            title: Dialog title
+            message: Error message
+        """
+        QMessageBox.critical(self, title, message)
+
+    def show_info(self, title: str, message: str):
+        """Show an info message dialog.
+
+        Args:
+            title: Dialog title
+            message: Info message
+        """
+        QMessageBox.information(self, title, message)
+
+    def _show_context_menu(self, position: QPoint):
+        """Show context menu for album items.
+
+        Args:
+            position: Position where context menu was requested
+        """
+        # Get item at position
+        item = self.list_widget.itemAt(position)
+        if not item:
+            return
+
+        # Get album from item
+        album = item.data(Qt.ItemDataRole.UserRole)
+        if not album:
+            return
+
+        # Create context menu
+        menu = QMenu(self)
+
+        # Add rename action
+        rename_action = menu.addAction("Rename Album")
+        rename_action.setShortcut("F2")
+
+        # Show menu and get selected action
+        action = menu.exec(self.list_widget.mapToGlobal(position))
+
+        # Handle action
+        if action == rename_action:
+            self._handle_rename_album(album)
+
+    def _handle_rename_album(self, album: Album):
+        """Handle renaming an album.
+
+        Args:
+            album: Album to rename
+        """
+        # Show input dialog with current name
+        new_name, ok = QInputDialog.getText(
+            self,
+            "Rename Album",
+            f"Enter new name for '{album.name}':",
+            QLineEdit.EchoMode.Normal,
+            album.name
+        )
+
+        if ok and new_name:
+            # Emit signal with album and new name
+            # The main window will handle validation and actual rename
+            self.rename_album_requested.emit(album, new_name.strip())
 
     def set_drag_drop_enabled(self, enabled: bool):
         """Enable or disable drag-drop functionality.

@@ -138,17 +138,17 @@
 
 **NOTE: These tests verify critical file operations to prevent data loss**
 
-- [ ] T048 [P] [US4] Implement test for album creation validation in tests/test_file_operations.py
-- [ ] T049 [P] [US4] Implement test for album rename validation and atomicity in tests/test_file_operations.py
+- [X] T048 [P] [US4] Implement test for album creation validation in tests/test_file_operations.py
+- [X] T049 [P] [US4] Implement test for album rename validation and atomicity in tests/test_file_operations.py
 
 ### Implementation for User Story 4
 
-- [ ] T050 [US4] Implement create_album in AlbumManager with filesystem directory creation in src/services/album_manager.py
-- [ ] T051 [US4] Implement rename_album in AlbumManager with filesystem rename in src/services/album_manager.py
-- [ ] T052 [US4] Add album name validation (no invalid chars, no duplicates) in src/utils/file_validator.py
-- [ ] T053 [US4] Add "Create New Album" button to AlbumGrid in src/ui/album_grid.py
-- [ ] T054 [US4] Add album name edit dialog to AlbumTile (F2 key or click name) in src/ui/widgets/album_tile.py
-- [ ] T055 [US4] Add error handling for invalid names and conflicts in src/ui/album_grid.py
+- [X] T050 [US4] Implement create_album in AlbumManager with filesystem directory creation in src/services/album_manager.py
+- [X] T051 [US4] Implement rename_album in AlbumManager with filesystem rename in src/services/album_manager.py
+- [X] T052 [US4] Add album name validation (no invalid chars, no duplicates) in src/utils/file_validator.py
+- [X] T053 [US4] Add "Create New Album" button to AlbumGrid in src/ui/album_grid.py
+- [X] T054 [US4] Add album name edit dialog to AlbumTile (F2 key or click name) in src/ui/widgets/album_tile.py
+- [X] T055 [US4] Add error handling for invalid names and conflicts in src/ui/album_grid.py
 
 **Checkpoint**: At this point, albums can be created and renamed with filesystem integration
 
