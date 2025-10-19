@@ -21,9 +21,9 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Verify existing project structure matches plan.md requirements
-- [ ] T002 [P] Verify directory structure exists: src/models/, src/services/, src/utils/ (create if missing)
-- [ ] T003 [P] Verify UI directory structure exists: src/ui/ and src/ui/widgets/ (create if missing)
+- [X] T001 Verify existing project structure matches plan.md requirements
+- [X] T002 [P] Verify directory structure exists: src/models/, src/services/, src/utils/ (create if missing)
+- [X] T003 [P] Verify UI directory structure exists: src/ui/ and src/ui/widgets/ (create if missing)
 
 ---
 
@@ -33,15 +33,15 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Create LibraryItem dataclass in src/models/library_item.py with all fields from data-model.md
-- [ ] T005 [P] Create ViewGroup entities (DayGroup, MonthGroup, YearGroup, EventCluster) in src/models/view_groups.py
-- [ ] T006 Create LibraryService class skeleton in src/services/library_service.py implementing ILibraryService interface
-- [ ] T007 Implement LibraryService.load_library() method to scan filesystem, extract EXIF metadata using ExifParser, and create LibraryItem objects
-- [ ] T008 [P] Create ThumbnailLoader class in src/utils/async_loader.py with QThreadPool-based worker pattern
-- [ ] T009 [P] Modify ThumbnailCache in src/utils/thumbnail_cache.py to add mtime-based cache invalidation logic
-- [ ] T010 Create PhotoLibraryModel (QAbstractListModel) in src/ui/widgets/virtual_grid.py with lazy loading support
-- [ ] T011 Create ThumbnailDelegate (QStyledItemDelegate) in src/ui/widgets/virtual_grid.py with async thumbnail loading
-- [ ] T012 Create VirtualGridWidget (QListView) in src/ui/widgets/virtual_grid.py with IconMode and uniformItemSizes configuration
+- [X] T004 Create LibraryItem dataclass in src/models/library_item.py with all fields from data-model.md
+- [X] T005 [P] Create ViewGroup entities (DayGroup, MonthGroup, YearGroup, EventCluster) in src/models/view_groups.py
+- [X] T006 Create LibraryService class skeleton in src/services/library_service.py implementing ILibraryService interface
+- [X] T007 Implement LibraryService.load_library() method to scan filesystem, extract EXIF metadata using ExifParser, and create LibraryItem objects
+- [X] T008 [P] Create ThumbnailLoader class in src/utils/async_loader.py with QThreadPool-based worker pattern
+- [X] T009 [P] Modify ThumbnailCache in src/utils/thumbnail_cache.py to add mtime-based cache invalidation logic
+- [X] T010 Create PhotoLibraryModel (QAbstractListModel) in src/ui/widgets/virtual_grid.py with lazy loading support
+- [X] T011 Create ThumbnailDelegate (QStyledItemDelegate) in src/ui/widgets/virtual_grid.py with async thumbnail loading
+- [X] T012 Create VirtualGridWidget (QListView) in src/ui/widgets/virtual_grid.py with IconMode and uniformItemSizes configuration
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
