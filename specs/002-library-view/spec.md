@@ -117,7 +117,7 @@ A user wants to see highlights from their photo collection year by year. They na
 - **FR-016**: System MUST extract and use EXIF date metadata for chronological organization
 - **FR-017**: System MUST cache generated thumbnails for improved performance on subsequent views
 - **FR-022**: System MUST invalidate and regenerate cached thumbnails when the source file's modification timestamp changes
-- **FR-018**: System MUST analyze EXIF quality metrics (ISO, exposure, sharpness) to determine best shots for Days view
+- **FR-018**: System MUST analyze EXIF quality metrics (ISO, exposure, sharpness derived from shutter speed vs focal length reciprocal rule) to determine best shots for Days view
 - **FR-019**: System MUST use time-based clustering algorithms to identify significant events within Months view
 - **FR-020**: System MUST select yearly highlights by combining quality metrics with temporal variety (photos spread throughout the year)
 - **FR-021**: System MUST log all thumbnail generation failures with file path and error details for debugging purposes
@@ -125,12 +125,12 @@ A user wants to see highlights from their photo collection year by year. They na
 
 ### Key Entities
 
-- **MediaItem**: Represents a photo or video in the library, including file path, creation date, media type, thumbnail reference, and EXIF metadata
-- **Thumbnail**: Cached preview version of a media item optimized for grid display, with dimensions, file path, and source file modification timestamp for cache invalidation
+- **LibraryItem**: Represents a photo or video in the library, including file path, creation date, media type, thumbnail reference, and EXIF metadata
+- **Thumbnail**: Cached preview version of a library item optimized for grid display, with dimensions, file path, and source file modification timestamp for cache invalidation
 - **LibraryView**: Organizational perspective on the media collection (All Photos, Days, Months, or Years), defining grouping and sorting logic
-- **DayGroup**: Collection of media items from a single calendar day, including metadata about best shots
-- **MonthGroup**: Collection of media items from a single month, organized by events or occasions
-- **YearGroup**: Collection of media items from a single year, including identified highlights
+- **DayGroup**: Collection of library items from a single calendar day, including metadata about best shots
+- **MonthGroup**: Collection of library items from a single month, organized by events or occasions
+- **YearGroup**: Collection of library items from a single year, including identified highlights
 
 ## Success Criteria
 
