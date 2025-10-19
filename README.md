@@ -1,0 +1,395 @@
+# Photo Album Organizer
+
+A desktop application for organizing and browsing photo albums with a modern tile-based interface, drag-and-drop support, and RAW image handling.
+
+## Features
+
+### Currently Implemented (Phases 1-7 Complete!)
+
+**Album Management** (User Stories 1, 3, 4)
+- **Album Browsing**: View all photo albums in a chronological grid layout
+- **Smart Date Parsing**: Automatically extracts dates from folder names (format: `YYYY-MM-DD_Description`)
+- **Drag-and-Drop Reordering**: Reorder albums by dragging with persistent custom ordering
+- **Create Albums**: Create new empty albums for organization
+- **Rename Albums**: Rename existing albums with filesystem integration
+- **Hide Empty Albums**: Toggle to show/hide albums with 0 photos
+
+**Photo Browsing** (User Story 2)
+- **Photo Grid View**: Browse photos within albums in a tile-based interface
+- **RAW-JPEG Deduplication**: Automatically shows one thumbnail for RAW+JPEG pairs
+- **Lightbox Viewer**: Click photos to view full-size with arrow key navigation
+- **Lazy Loading**: Photos and thumbnails load on-demand for performance
+
+**Photo Management** (User Story 5)
+- **Multi-Select**: Drag to select multiple photos at once
+- **Move Photos**: Move selected photos between albums with drag-drop or menu
+- **RAW-JPEG Pairing**: RAW and JPEG versions move together automatically
+- **Atomic Operations**: File moves with rollback on failure to prevent data loss
+
+**Performance & UX**
+- **Virtual Scrolling**: Efficiently handles 500+ albums and large photo collections
+- **Live Filesystem Watching**: Automatically detects external changes and refreshes
+- **Thumbnail Caching**: Disk-based thumbnail cache with SHA-256 keying
+- **Keyboard Shortcuts**: Full keyboard navigation support (Ctrl+Q, F11, Escape)
+- **Loading Indicators**: Progress dialogs for long operations
+- **Error Handling**: Graceful error states for missing directories and corrupted files
+- **Empty States**: Helpful messages when albums or photo collections are empty
+- **Responsive UI**: Modern interface built with PyQt6
+
+### Coming Soon (Phase 8 - Polish)
+
+- Performance optimization for 500+ albums
+- Production logging configuration
+- Configuration file support (TOML)
+
+## Requirements
+
+- Python 3.13+
+- Linux desktop environment (Ubuntu/Debian-based systems)
+
+## Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd photo_organiser
+```
+
+### 2. Install System Dependencies
+
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install libraw-dev
+
+# Verify Python version
+python3 --version  # Should be 3.13+
+```
+
+### 3. Install Python Dependencies
+
+This project uses [uv](https://github.com/astral-sh/uv) for dependency management:
+
+```bash
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install project dependencies
+uv sync
+
+# Install development dependencies (for testing)
+uv sync --extra dev
+```
+
+### 4. Setup Photo Directory
+
+Organize your photos into date-based folders:
+
+```text
+~/Pictures/
+   2024-01-15_Vacation/
+      IMG_001.jpg
+      IMG_002.jpg
+      IMG_003.cr3
+   2023-12-25_Christmas/
+      photo1.jpg
+   2024-03-10/
+       pic.png
+```
+
+**Date Format**: Folders starting with `YYYY-MM-DD` will be automatically parsed for chronological sorting.
+
+## Usage
+
+### Running the Application
+
+```bash
+# Specify photo directory
+uv run python -m src.main --photo-dir /path/to/photos
+
+# Use custom state file location
+uv run python -m src.main --photo-dir ~/Photos --state-file ~/mystate.json
+
+# View help
+uv run python -m src.main --help
+```
+
+### Keyboard Shortcuts
+
+**Global**
+- **Ctrl+Q**: Quit application
+- **F5**: Refresh albums from filesystem
+- **F11**: Toggle fullscreen
+- **Escape**: Exit fullscreen / Go back to album view
+
+**Album View**
+- **Click**: Open album to view photos
+- **Drag**: Reorder albums
+- **F2** (on album): Rename album
+- **Right-click** (on album): Album menu (rename)
+
+**Photo View**
+- **Double-click photo**: Open in lightbox viewer
+- **Drag to select**: Select multiple photos
+- **Right-click** (on selection): Move photos to another album
+- **Escape**: Return to album view
+
+**Lightbox**
+- **Arrow Left/Right**: Previous/Next photo
+- **Escape** / **Q**: Close lightbox
+
+## Project Structure
+
+```text
+photo_organiser/
+├── src/
+│   ├── models/              # Data models (Album, Photo, AppState)
+│   ├── services/            # Business logic
+│   │   ├── filesystem_scanner.py    # Scan directories for albums
+│   │   ├── filesystem_watcher.py    # Watch for filesystem changes
+│   │   ├── photo_processor.py       # Thumbnail generation & RAW support
+│   │   ├── album_manager.py         # Album management & ordering
+│   │   └── photo_manager.py         # Photo operations (move, select)
+│   ├── ui/                  # User interface
+│   │   ├── main_window.py           # Main application window
+│   │   ├── album_grid.py            # Album grid view
+│   │   ├── photo_grid.py            # Photo grid view
+│   │   ├── lightbox.py              # Full-size photo viewer
+│   │   └── widgets/                 # UI components
+│   │       ├── album_tile.py        # Album tile widget
+│   │       ├── photo_tile.py        # Photo tile widget
+│   │       └── drag_drop.py         # Drag-drop helpers
+│   ├── utils/               # Utilities
+│   │   ├── exif_parser.py           # EXIF metadata extraction
+│   │   ├── file_validator.py        # Filename validation
+│   │   └── thumbnail_cache.py       # Thumbnail caching
+│   └── main.py              # Application entry point
+├── tests/                   # Test suite
+│   ├── test_filesystem_scanner.py   # Album discovery tests
+│   ├── test_photo_processor.py      # RAW-JPEG deduplication tests
+│   └── test_file_operations.py      # File move safety tests
+├── data/                    # Application data (generated)
+│   ├── thumbnails/          # Cached thumbnails
+│   └── app_state.json       # Persistent state (album ordering)
+└── specs/                   # Feature specifications
+    └── 001-build-an-application/
+        ├── spec.md
+        ├── plan.md
+        ├── data-model.md
+        ├── tasks.md
+        └── contracts/
+```
+
+## Development
+
+### Running Tests
+
+```bash
+# Run all tests
+uv run pytest tests/ -v
+
+# Run specific test file
+uv run pytest tests/test_filesystem_scanner.py -v
+
+# Run with coverage
+uv run pytest tests/ --cov=src --cov-report=html
+```
+
+**Current Test Coverage**: Critical functionality tested (album discovery, date parsing, RAW-JPEG deduplication, file operations).
+
+### Code Quality
+
+```bash
+# Run linter
+uv run ruff check .
+
+# Auto-fix issues
+uv run ruff check . --fix
+
+# Format code
+uv run ruff format .
+```
+
+## Supported File Formats
+
+### Images
+
+- **JPEG**: `.jpg`, `.jpeg`
+- **PNG**: `.png`
+- **HEIC**: `.heic` (Apple format)
+- **RAW Formats**: `.cr3` (Canon), `.nef` (Nikon), `.arw` (Sony), `.dng` (Adobe)
+
+### RAW-JPEG Deduplication
+
+When both RAW and JPEG versions of the same photo exist (e.g., `IMG_001.cr3` and `IMG_001.jpg`), they will be displayed as a single thumbnail to avoid clutter. When moving photos, both files move together automatically.
+
+## Configuration
+
+### State File Format
+
+The application stores album ordering and settings in `data/app_state.json`:
+
+```json
+{
+  "version": "1.0",
+  "album_order": [
+    {
+      "album_path": "/absolute/path/to/album",
+      "sort_index": 0,
+      "metadata": {},
+      "updated_at": "2025-10-18T14:30:00Z"
+    }
+  ],
+  "settings": {
+    "hide_empty_albums": true
+  }
+}
+```
+
+### Performance Targets
+
+- **Startup Time**: < 2 seconds
+- **Thumbnail Loading**: < 2 seconds for visible items
+- **Filesystem Detection**: < 2 seconds for changes
+- **Memory Usage**: < 500MB even with 500+ albums
+- **UI Responsiveness**: < 100ms for all interactions
+
+## Troubleshooting
+
+### Application won't start
+
+```bash
+# Check Python version
+python --version  # Should be 3.13+
+
+# Verify dependencies
+uv sync --extra dev
+
+# Check photo directory exists and is readable
+ls -la /path/to/photos
+```
+
+### "Photo Directory Unavailable" error
+
+1. Ensure the directory exists: `mkdir -p /path/to/photos`
+2. Check read permissions: `chmod u+r /path/to/photos`
+3. If on network drive, ensure it's mounted
+4. Try with a local directory first to rule out permission issues
+
+### Albums not appearing
+
+1. Ensure albums are direct subdirectories (flat hierarchy - no nested albums)
+2. Check albums don't start with `.` (hidden directories are ignored)
+3. Verify directory contains at least one image file in supported formats
+4. Check permissions: directories must be readable
+5. Try clicking "Refresh" (F5) to force reload
+
+### Thumbnails not loading
+
+1. Ensure photo files are in supported formats
+2. Check file permissions (must be readable)
+3. Verify `data/thumbnails/` directory is writable: `chmod u+w data/thumbnails`
+4. Check for corrupted image files
+5. For RAW files, ensure `libraw-dev` is installed
+
+### Cannot load RAW images
+
+```bash
+# Install libraw development package
+sudo apt install libraw-dev
+
+# Reinstall rawpy
+uv pip install rawpy --force-reinstall
+```
+
+### Filesystem changes not detected
+
+1. Verify the filesystem watcher started (check console output)
+2. Check system supports inotify (Linux) or equivalent
+3. Restart the application to force a refresh
+4. Use F5 to manually refresh if automatic detection fails
+
+### High memory usage
+
+```bash
+# Clear thumbnail cache and restart
+rm -rf data/thumbnails/*
+uv run python -m src.main --photo-dir /path/to/photos
+```
+
+### Slow album loading
+
+**Possible causes**:
+1. Very large albums (>1000 photos) - normal, uses virtual scrolling
+2. Network-mounted drive - copy photos locally for better performance
+3. Corrupted EXIF data - check logs for warnings
+4. RAW files require decoding - first load will be slower
+
+## Performance Notes
+
+- **Virtual Scrolling**: Only visible albums/photos are rendered, allowing smooth scrolling with 500+ items
+- **Lazy Loading**: Thumbnails are generated on-demand and cached to disk
+- **Debouncing**: Filesystem events are debounced (500ms) to prevent excessive refreshes
+- **Efficient Rendering**: Uses PyQt6's native viewport culling for optimal performance
+- **RAW Preview Extraction**: Extracts embedded JPEG preview from RAW files (10-100x faster than full decode)
+- **Thumbnail Cache**: SHA-256 keyed disk cache prevents regeneration
+
+## Architecture
+
+The application follows a clean architecture with clear separation of concerns:
+
+1. **Models** (`src/models/`): Pure data classes (Album, Photo, PhotoPair, AppState)
+2. **Services** (`src/services/`): Business logic and filesystem operations
+3. **UI** (`src/ui/`): User interface components (PyQt6)
+4. **Utils** (`src/utils/`): Shared utilities (EXIF parsing, validation, caching)
+
+### Design Principles
+
+- **Pragmatic Testing**: Focus on critical file operations and complex logic
+- **Performance First**: Virtual scrolling, lazy loading, efficient caching
+- **Progressive Enhancement**: Features organized by user story priority
+- **Code Quality**: Simple, maintainable code with minimal dependencies
+- **User Experience**: Responsive UI with < 100ms interaction latency
+- **Data Safety**: Atomic file operations with rollback on failure
+
+## Contributing
+
+This project uses the [SpecKit](https://github.com/speckit-dev/speckit) workflow:
+
+1. Features are specified in `specs/` directory
+2. Each feature has: `spec.md`, `plan.md`, `data-model.md`, `tasks.md`
+3. Implementation follows the task breakdown in `tasks.md`
+4. Tests are written for critical functionality (file operations, complex algorithms)
+
+## License
+
+[License information here]
+
+## Acknowledgments
+
+- Built with [PyQt6](https://www.riverbankcomputing.com/software/pyqt/)
+- Image processing with [Pillow](https://python-pillow.org/)
+- RAW image support via [rawpy](https://github.com/letmaik/rawpy)
+- Filesystem watching with [watchdog](https://github.com/gorakhargosh/watchdog)
+- EXIF parsing with [exifread](https://github.com/ianare/exif-py)
+
+## Status
+
+**Current Version**: 0.7.0 (Phases 1-7 Complete!)
+
+- ✅ Phase 1: Setup - Complete
+- ✅ Phase 2: Foundation - Complete
+- ✅ Phase 3: User Story 1 (View Albums) - Complete
+- ✅ Phase 4: User Story 2 (Browse Photos) - Complete
+- ✅ Phase 5: User Story 3 (Reorder Albums) - Complete
+- ✅ Phase 6: User Story 4 (Create/Rename Albums) - Complete
+- ✅ Phase 7: User Story 5 (Move Photos) - Complete
+- 🔄 Phase 8: Polish & Optimization - In Progress
+
+**Feature Status**: All 5 user stories implemented and functional!
+- ✅ US1: View photo albums chronologically
+- ✅ US2: Browse photos within albums (with RAW-JPEG deduplication)
+- ✅ US3: Reorganize albums by drag-and-drop
+- ✅ US4: Create and rename albums
+- ✅ US5: Move photos between albums

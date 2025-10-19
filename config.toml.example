@@ -1,0 +1,33 @@
+# Photo Album Organizer Configuration File
+#
+# This file provides an alternative to command-line arguments.
+# CLI arguments take precedence over config file settings.
+#
+# Config file locations (in order of precedence):
+# 1. Specified via --config CLI argument
+# 2. ./config.toml (current directory)
+# 3. ~/.config/photo-organizer/config.toml
+# 4. /etc/photo-organizer/config.toml
+
+# Photo directory (required)
+# Root directory containing photo albums
+photo_dir = "~/Pictures"
+
+# State file (optional)
+# Path to JSON file storing application state (album ordering, etc.)
+# Default: data/app_state.json
+# state_file = "~/.local/share/photo-organizer/app_state.json"
+
+# Cache directory (optional)
+# Directory for thumbnail cache
+# Default: data/thumbnails
+# cache_dir = "~/.cache/photo-organizer/thumbnails"
+
+# Logging configuration (optional)
+# Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+# Default: INFO
+log_level = "INFO"
+
+# Log file path (optional)
+# If not specified, logs go to console only
+# log_file = "~/.local/share/photo-organizer/app.log"
