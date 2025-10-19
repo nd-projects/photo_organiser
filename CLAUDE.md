@@ -4,6 +4,8 @@ Auto-generated from all feature plans. Last updated: 2025-10-16
 
 ## Active Technologies
 - Python 3.13 + PyQt6, Pillow (PIL), watchdog, rawpy, exifread (001-build-an-application)
+- Python 3.13 + PyQt6 (UI framework), Pillow (image processing), rawpy (RAW support), exifread (metadata extraction), watchdog (filesystem monitoring) (002-library-view)
+- File-based (thumbnails cached to data/thumbnails/, photos indexed from filesystem) (002-library-view)
 
 ## Project Structure
 ```
@@ -18,6 +20,7 @@ cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLO
 Python 3.13: Follow standard conventions
 
 ## Recent Changes
+- 002-library-view: Added Python 3.13 + PyQt6 (UI framework), Pillow (image processing), rawpy (RAW support), exifread (metadata extraction), watchdog (filesystem monitoring)
 - 2025-10-16: Changed UI framework from tkinter/CustomTkinter to PyQt6
 - 001-build-an-application: Added Python 3.13 + PyQt6, Pillow (PIL), watchdog, rawpy, exifread
 
