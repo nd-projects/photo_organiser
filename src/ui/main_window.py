@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QStatusBar,
     QMessageBox,
+    QTabWidget,
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QKeySequence, QShortcut
@@ -22,6 +23,10 @@ from ..models.app_state import AppState
 from .album_grid import AlbumGrid
 from .photo_grid import PhotoGrid
 from .lightbox import Lightbox
+from .library_view import LibraryView
+from ..services.library_service import LibraryService
+from ..services.photo_processor import PhotoProcessor
+from ..utils.thumbnail_cache import ThumbnailCache
 
 
 class MainWindow(QMainWindow):
@@ -66,9 +71,150 @@ class MainWindow(QMainWindow):
         settings = app_state.load_settings()
         self._hide_empty_albums = settings.get("hide_empty_albums", True)
 
+        # T028: Initialize LibraryService and related services (set defaults first)
+        self.library_service = None
+        self.thumbnail_cache = None
+        self.photo_processor = None
+        self._library_loaded = False  # Track if library has been loaded
+        self._initialize_library_service()
+
         # Create UI
         self._create_widgets()
         self._setup_keyboard_shortcuts()
+
+        # T028: Load library in background after UI is ready
+        # NOTE: Library loading is deferred - it will be triggered when user clicks Library tab
+        # This prevents blocking the main UI during startup
+        # self._load_library_async()
+
+    def _initialize_library_service(self):
+        """Initialize LibraryService and related services for Library view."""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        try:
+            # Initialize services
+            # Create thumbnail cache directory
+            cache_dir = self.app_state.photo_dir / "data" / "thumbnails"
+
+            # PhotoProcessor creates its own ThumbnailCache, so just pass cache_dir
+            self.photo_processor = PhotoProcessor(cache_dir)
+
+            # Get the ThumbnailCache from PhotoProcessor for use by other components
+            self.thumbnail_cache = self.photo_processor.cache
+
+            # Initialize LibraryService
+            self.library_service = LibraryService(self.app_state.photo_dir)
+
+            logger.info("LibraryService initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize LibraryService: {e}")
+            import traceback
+            traceback.print_exc()
+            self.library_service = None
+            self.thumbnail_cache = None
+            self.photo_processor = None
+
+    def _load_library_async(self):
+        """Load library data in background after UI is ready."""
+        if self.library_service:
+            from PyQt6.QtCore import QTimer
+            import logging
+            logger = logging.getLogger(__name__)
+
+            def load():
+                try:
+                    logger.info("Loading library in background...")
+                    self.library_service.load_library()
+                    logger.info(f"Library loaded successfully: {self.library_service.get_total_count()} items")
+
+                    # Load library view if it exists
+                    if hasattr(self, 'library_view'):
+                        logger.info("Initializing library view...")
+                        self.library_view.load_library()
+                        logger.info("Library view loaded successfully")
+                except Exception as e:
+                    logger.error(f"Failed to load library: {e}")
+                    import traceback
+                    traceback.print_exc()
+
+            # Schedule load after UI is shown (1 second delay to let UI fully initialize)
+            QTimer.singleShot(1000, load)
+
+    def _on_tab_changed(self, index: int):
+        """Handle tab change to load library on-demand when Library tab is selected."""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # Check if Library tab was selected (index 1) and library not yet loaded
+        if index == 1 and self.library_service and not self._library_loaded:
+            logger.info("Library tab selected - loading library on-demand...")
+            self._library_loaded = True  # Set flag immediately to prevent double-loading
+
+            # Show loading overlay
+            self.show_loading("Scanning photo library...")
+
+            # Load library in background thread
+            from PyQt6.QtCore import QThread, pyqtSignal
+
+            class LibraryLoadWorker(QThread):
+                """Background worker for loading library."""
+                finished = pyqtSignal(int)  # Emits total count when done
+                error = pyqtSignal(str)  # Emits error message on failure
+
+                def __init__(self, library_service):
+                    super().__init__()
+                    self.library_service = library_service
+
+                def run(self):
+                    try:
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.info("Background: Scanning photo directory...")
+
+                        self.library_service.load_library()
+                        total = self.library_service.get_total_count()
+
+                        logger.info(f"Background: Library loaded - {total} items")
+                        self.finished.emit(total)
+                    except Exception as e:
+                        logger.error(f"Background: Failed to load library: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        self.error.emit(str(e))
+
+            def on_library_loaded(total: int):
+                """Called when library loading completes."""
+                try:
+                    logger.info(f"Library loaded: {total} items - initializing view...")
+
+                    # Initialize library view on main thread
+                    if hasattr(self, 'library_view'):
+                        self.library_view.load_library()
+                        logger.info("Library view ready")
+
+                    self.hide_loading()
+                    self.set_status(f"Library: {total} items")
+                except Exception as e:
+                    logger.error(f"Failed to initialize library view: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    self.hide_loading()
+                    self.set_status("Failed to load library")
+                    self._library_loaded = False
+
+            def on_library_error(error_msg: str):
+                """Called when library loading fails."""
+                logger.error(f"Library loading failed: {error_msg}")
+                self.hide_loading()
+                self.set_status("Failed to load library")
+                self._library_loaded = False
+
+            # Create and start worker thread
+            self._library_worker = LibraryLoadWorker(self.library_service)
+            self._library_worker.finished.connect(on_library_loaded)
+            self._library_worker.error.connect(on_library_error)
+            self._library_worker.start()
 
     def _create_widgets(self):
         """Create main window widgets."""
@@ -84,9 +230,21 @@ class MainWindow(QMainWindow):
         header_widget = self._create_header()
         main_layout.addWidget(header_widget)
 
+        # T027: Create main tab widget for Albums and Library
+        self.main_tabs = QTabWidget()
+        self.main_tabs.setDocumentMode(True)
+        # Connect tab change signal to load library on-demand
+        self.main_tabs.currentChanged.connect(self._on_tab_changed)
+        main_layout.addWidget(self.main_tabs, 1)  # Stretch factor 1
+
+        # Albums tab container
+        albums_container = QWidget()
+        albums_layout = QVBoxLayout(albums_container)
+        albums_layout.setContentsMargins(0, 0, 0, 0)
+
         # Album grid
         self.album_grid = AlbumGrid(on_album_click=self._handle_album_click)
-        main_layout.addWidget(self.album_grid, 1)  # Stretch factor 1
+        albums_layout.addWidget(self.album_grid, 1)
 
         # Photo grid (hidden initially)
         self.photo_grid = PhotoGrid(
@@ -95,7 +253,30 @@ class MainWindow(QMainWindow):
         )
         self.photo_grid.move_photos_requested.connect(self._handle_move_photos)
         self.photo_grid.hide()
-        main_layout.addWidget(self.photo_grid, 1)  # Stretch factor 1
+        albums_layout.addWidget(self.photo_grid, 1)
+
+        self.main_tabs.addTab(albums_container, "Albums")
+
+        # T027: Library tab (Phase 3 - User Story 1)
+        if self.library_service and self.thumbnail_cache and self.photo_processor:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info("Creating Library view...")
+            self.library_view = LibraryView(
+                self.library_service,
+                self.thumbnail_cache,
+                self.photo_processor
+            )
+            self.main_tabs.addTab(self.library_view, "Library")
+            logger.info("Library tab added successfully!")
+        else:
+            # Add placeholder if services failed to initialize
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Library view not available - services failed to initialize:")
+            logger.error(f"  library_service: {self.library_service}")
+            logger.error(f"  thumbnail_cache: {self.thumbnail_cache}")
+            logger.error(f"  photo_processor: {self.photo_processor}")
 
         # Status bar
         self._create_status_bar()

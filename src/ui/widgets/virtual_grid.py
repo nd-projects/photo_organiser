@@ -12,6 +12,7 @@ from PyQt6.QtCore import (
 from PyQt6.QtGui import QPainter, QPixmap, QColor
 from pathlib import Path
 from typing import Optional
+from collections import OrderedDict
 import logging
 
 logger = logging.getLogger(__name__)
@@ -174,21 +175,23 @@ class ThumbnailDelegate(QStyledItemDelegate):
     # Parameters: (source_path: Path, index: QModelIndex)
     thumbnail_requested = pyqtSignal(Path, QModelIndex)
 
-    def __init__(self, thumbnail_cache, thumbnail_size: tuple[int, int] = (200, 200), parent=None):
+    def __init__(self, thumbnail_cache, thumbnail_size: tuple[int, int] = (200, 200), max_cache_size: int = 500, parent=None):
         """
         Initialize thumbnail delegate.
 
         Args:
             thumbnail_cache: ThumbnailCache instance for checking cache
             thumbnail_size: Thumbnail size (width, height) (default: 200x200)
+            max_cache_size: Maximum number of QPixmaps to cache (default: 500) (T031)
             parent: Parent QObject
         """
         super().__init__(parent)
         self.thumbnail_cache = thumbnail_cache
         self.thumbnail_size = thumbnail_size
+        self.max_cache_size = max_cache_size  # T031: LRU cache limit
 
-        # Cache for loaded thumbnails (QPixmap can only be created in main thread)
-        self.pixmap_cache: dict[int, QPixmap] = {}  # row -> QPixmap
+        # T031: LRU cache for loaded thumbnails (QPixmap can only be created in main thread)
+        self.pixmap_cache: OrderedDict[int, QPixmap] = OrderedDict()  # row -> QPixmap
 
         # Track which thumbnails have been requested (prevent duplicate requests)
         self._requested: set[int] = set()
@@ -197,7 +200,7 @@ class ThumbnailDelegate(QStyledItemDelegate):
         self.placeholder = self._create_placeholder()
         self.error_pixmap = self._create_error()
 
-        logger.debug(f"ThumbnailDelegate initialized (size={thumbnail_size})")
+        logger.debug(f"ThumbnailDelegate initialized (size={thumbnail_size}, max_cache={max_cache_size})")
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
         """
@@ -220,8 +223,10 @@ class ThumbnailDelegate(QStyledItemDelegate):
 
         row = index.row()
 
-        # Check if we have a cached QPixmap for this row
+        # T031: Check if we have a cached QPixmap for this row (LRU access)
         if row in self.pixmap_cache:
+            # Move to end (most recently used)
+            self.pixmap_cache.move_to_end(row)
             pixmap = self.pixmap_cache[row]
         else:
             # Check if thumbnail exists on disk (fast check)
@@ -233,7 +238,7 @@ class ThumbnailDelegate(QStyledItemDelegate):
                 if pixmap.isNull():
                     pixmap = self.error_pixmap
                 else:
-                    self.pixmap_cache[row] = pixmap
+                    self._add_to_cache(row, pixmap)  # T031: LRU eviction
             else:
                 # Not cached - show placeholder and request async load
                 pixmap = self.placeholder
@@ -256,7 +261,55 @@ class ThumbnailDelegate(QStyledItemDelegate):
         y = option.rect.y() + (option.rect.height() - pixmap.height()) // 2
 
         painter.drawPixmap(x, y, pixmap)
+
+        # T030: Draw play icon overlay for videos
+        from ...models.library_item import MediaType
+        if item.media_type == MediaType.VIDEO:
+            self._draw_video_play_icon(painter, x, y, pixmap.width(), pixmap.height())
+
         painter.restore()
+
+    def _draw_video_play_icon(self, painter: QPainter, x: int, y: int, width: int, height: int):
+        """
+        Draw a play icon overlay for video thumbnails.
+
+        Args:
+            painter: QPainter for rendering
+            x: X position of thumbnail
+            y: Y position of thumbnail
+            width: Width of thumbnail
+            height: Height of thumbnail
+        """
+        from PyQt6.QtGui import QBrush, QPen, QPolygon
+        from PyQt6.QtCore import QPoint
+
+        # Draw semi-transparent circle background
+        icon_size = min(width, height) // 3
+        center_x = x + width // 2
+        center_y = y + height // 2
+
+        # Draw circle background
+        painter.setBrush(QBrush(QColor(0, 0, 0, 128)))  # Semi-transparent black
+        painter.setPen(QPen(QColor(255, 255, 255, 200), 2))  # White border
+        painter.drawEllipse(
+            center_x - icon_size // 2,
+            center_y - icon_size // 2,
+            icon_size,
+            icon_size
+        )
+
+        # Draw play triangle
+        triangle_size = icon_size // 3
+        triangle_offset_x = icon_size // 12  # Slight offset to center visually
+        triangle = QPolygon([
+            QPoint(center_x - triangle_size // 2 + triangle_offset_x, center_y - triangle_size // 2),
+            QPoint(center_x - triangle_size // 2 + triangle_offset_x, center_y + triangle_size // 2),
+            QPoint(center_x + triangle_size // 2 + triangle_offset_x, center_y)
+        ])
+
+        painter.setBrush(QBrush(QColor(255, 255, 255)))  # White triangle
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawPolygon(triangle)
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
         """
@@ -284,8 +337,33 @@ class ThumbnailDelegate(QStyledItemDelegate):
             row: Model row to update
             pixmap: Loaded QPixmap (created from QImage in main thread)
         """
-        self.pixmap_cache[row] = pixmap
+        self._add_to_cache(row, pixmap)  # T031: Use LRU eviction
         # View will repaint automatically via model.dataChanged signal
+
+    def _add_to_cache(self, row: int, pixmap: QPixmap):
+        """
+        Add pixmap to cache with LRU eviction.
+
+        T031: Implements LRU cache eviction to keep memory usage bounded.
+
+        Args:
+            row: Model row index
+            pixmap: QPixmap to cache
+        """
+        if row in self.pixmap_cache:
+            # Update existing - move to end (most recent)
+            self.pixmap_cache.move_to_end(row)
+            self.pixmap_cache[row] = pixmap
+        else:
+            # Add new pixmap
+            self.pixmap_cache[row] = pixmap
+
+            # Evict oldest if over limit
+            while len(self.pixmap_cache) > self.max_cache_size:
+                oldest_row = next(iter(self.pixmap_cache))  # Get first (oldest) key
+                evicted = self.pixmap_cache.pop(oldest_row)
+                logger.debug(f"LRU eviction: removed row {oldest_row} from cache (size: {len(self.pixmap_cache)})")
+                del evicted  # Explicit cleanup
 
     def clear_cache(self):
         """Clear the pixmap cache to free memory."""

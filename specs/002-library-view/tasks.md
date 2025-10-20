@@ -8,11 +8,13 @@
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
 ## Format: `[ID] [P?] [Story] Description`
+
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **[Story]**: Which user story this task belongs to (US1, US2, US3, US4)
 - Include exact file paths in descriptions
 
 ## Path Conventions
+
 - Single desktop application: `src/`, `tests/` at repository root
 
 ---
@@ -55,29 +57,30 @@
 
 ### Implementation for User Story 1
 
-- [ ] T013 [US1] Implement LibraryService.get_all_items(offset, limit) method for paginated access in src/services/library_service.py
-- [ ] T014 [US1] Implement LibraryService.get_total_count() method in src/services/library_service.py
-- [ ] T015 [US1] Implement PhotoLibraryModel.rowCount() to return loaded count in src/ui/widgets/virtual_grid.py
-- [ ] T016 [US1] Implement PhotoLibraryModel.data() to return item data on-demand in src/ui/widgets/virtual_grid.py
-- [ ] T017 [US1] Implement PhotoLibraryModel.canFetchMore() and fetchMore() for lazy loading in src/ui/widgets/virtual_grid.py
-- [ ] T018 [US1] Implement ThumbnailDelegate.paint() with placeholder and async load triggering in src/ui/widgets/virtual_grid.py
-- [ ] T019 [US1] Implement ThumbnailDelegate.sizeHint() with uniform size in src/ui/widgets/virtual_grid.py
-- [ ] T020 [US1] Implement ThumbnailWorker (QRunnable) for background thumbnail loading in src/utils/async_loader.py
-- [ ] T021 [US1] Implement ThumbnailLoader signal connections and queue management in src/utils/async_loader.py
-- [ ] T022 [US1] Create AllPhotosGrid widget in src/ui/all_photos_grid.py integrating VirtualGridWidget with LibraryService
-- [ ] T023 [US1] Connect ThumbnailDelegate.thumbnail_requested signal to ThumbnailLoader in src/ui/all_photos_grid.py
-- [ ] T024 [US1] Connect ThumbnailLoader.thumbnail_ready signal to update delegate cache in src/ui/all_photos_grid.py
-- [ ] T025 [US1] Create LibraryView container widget in src/ui/library_view.py with tab navigation for view modes
-- [ ] T026 [US1] Add AllPhotosGrid to LibraryView as default view in src/ui/library_view.py
-- [ ] T027 [US1] Modify MainWindow in src/ui/main_window.py to add Library tab with LibraryView widget
-- [ ] T028 [US1] Initialize LibraryService and load library on MainWindow startup in src/ui/main_window.py
-- [ ] T029 [US1] Add error handling for failed thumbnails (placeholder with error icon) in src/ui/widgets/virtual_grid.py
-- [ ] T030 [US1] Add video detection and play icon overlay in ThumbnailDelegate.paint() in src/ui/widgets/virtual_grid.py
-- [ ] T031 [US1] Implement LRU cache eviction (max 500 QPixmaps) in ThumbnailDelegate in src/ui/widgets/virtual_grid.py
+- [X] T013 [US1] Implement LibraryService.get_all_items(offset, limit) method for paginated access in src/services/library_service.py
+- [X] T014 [US1] Implement LibraryService.get_total_count() method in src/services/library_service.py
+- [X] T015 [US1] Implement PhotoLibraryModel.rowCount() to return loaded count in src/ui/widgets/virtual_grid.py
+- [X] T016 [US1] Implement PhotoLibraryModel.data() to return item data on-demand in src/ui/widgets/virtual_grid.py
+- [X] T017 [US1] Implement PhotoLibraryModel.canFetchMore() and fetchMore() for lazy loading in src/ui/widgets/virtual_grid.py
+- [X] T018 [US1] Implement ThumbnailDelegate.paint() with placeholder and async load triggering in src/ui/widgets/virtual_grid.py
+- [X] T019 [US1] Implement ThumbnailDelegate.sizeHint() with uniform size in src/ui/widgets/virtual_grid.py
+- [X] T020 [US1] Implement ThumbnailWorker (QRunnable) for background thumbnail loading in src/utils/async_loader.py
+- [X] T021 [US1] Implement ThumbnailLoader signal connections and queue management in src/utils/async_loader.py
+- [X] T022 [US1] Create AllPhotosGrid widget in src/ui/all_photos_grid.py integrating VirtualGridWidget with LibraryService
+- [X] T023 [US1] Connect ThumbnailDelegate.thumbnail_requested signal to ThumbnailLoader in src/ui/all_photos_grid.py
+- [X] T024 [US1] Connect ThumbnailLoader.thumbnail_ready signal to update delegate cache in src/ui/all_photos_grid.py
+- [X] T025 [US1] Create LibraryView container widget in src/ui/library_view.py with tab navigation for view modes
+- [X] T026 [US1] Add AllPhotosGrid to LibraryView as default view in src/ui/library_view.py
+- [X] T027 [US1] Modify MainWindow in src/ui/main_window.py to add Library tab with LibraryView widget
+- [X] T028 [US1] Initialize LibraryService and load library on MainWindow startup in src/ui/main_window.py
+- [X] T029 [US1] Add error handling for failed thumbnails (placeholder with error icon) in src/ui/widgets/virtual_grid.py
+- [X] T030 [US1] Add video detection and play icon overlay in ThumbnailDelegate.paint() in src/ui/widgets/virtual_grid.py
+- [X] T031 [US1] Implement LRU cache eviction (max 500 QPixmaps) in ThumbnailDelegate in src/ui/widgets/virtual_grid.py
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - can view entire library in scrollable grid with smooth 60fps performance
 
 **Manual Testing for US1**:
+
 - Launch app with 1,000+ photos
 - Click Library tab
 - Verify grid displays with smooth scrolling
@@ -117,6 +120,7 @@
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work - can view all photos grid OR browse by days with best shots
 
 **Manual Testing for US2**:
+
 - Navigate to Days view
 - Verify photos grouped by day chronologically
 - Verify best shots (top 5) highlighted per day
@@ -147,6 +151,7 @@
 **Checkpoint**: All three views (All Photos, Days, Months) should now be independently functional
 
 **Manual Testing for US3**:
+
 - Navigate to Months view
 - Verify photos grouped by month
 - Verify events clustered within months
@@ -173,6 +178,7 @@
 **Checkpoint**: All four view modes should now be fully functional and independently testable
 
 **Manual Testing for US4**:
+
 - Navigate to Years view
 - Verify photos grouped by year (reverse chronological)
 - Verify 20-50 highlights per year
@@ -231,20 +237,24 @@
 - T002 and T003 can run in parallel (independent directory verification)
 
 **Phase 2 (Foundational)**:
+
 - T004 and T005 can run in parallel (different model files)
 - T008 and T009 can run in parallel (different utility files)
 - T010, T011, T012 must run sequentially (same file: virtual_grid.py)
 
 **Phase 4 (US2)**:
+
 - T032-T037 can run in parallel (different helper functions in same file with careful merge)
 - Quality scoring helpers are independent
 
 **Phase 7 (Polish)**:
+
 - T066, T069, T070, T071, T072 can run in parallel (different files)
 - T073-T075 are testing tasks (can run in parallel)
 - T076 and T077 can run in parallel (different testing activities)
 
 **Cross-Story Parallelism**:
+
 - After Phase 2 completes, US2, US3, and US4 can be worked on in parallel by different developers
 - US1 should be completed first to validate foundation
 
@@ -327,6 +337,7 @@ With multiple developers (after Foundational phase completes):
 **Parallel Opportunities Identified**: 15+ tasks can run in parallel within phases
 
 **Independent Test Criteria**:
+
 - US1: View entire library in scrollable grid with 60fps performance
 - US2: Browse by days with best shots highlighted
 - US3: Browse by months with events clustered
