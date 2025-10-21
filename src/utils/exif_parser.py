@@ -229,6 +229,77 @@ class EXIFParser:
         return None
 
     @staticmethod
+    def extract_exif(path: Path) -> dict:
+        """Extract full EXIF data dictionary from image file.
+
+        This returns the raw EXIF tags for use in quality scoring and
+        detailed metadata extraction. For RAW files (CR3, etc.), it extracts
+        EXIF from the embedded JPEG preview.
+
+        Args:
+            path: Path to image file
+
+        Returns:
+            Dictionary of EXIF tags (empty dict if extraction fails)
+        """
+        if not path.exists():
+            return {}
+
+        if exifread is None:
+            return {}
+
+        try:
+            # For RAW files, try to extract EXIF from embedded preview
+            if EXIFParser.is_raw_format(path):
+                return EXIFParser._extract_exif_from_raw(path)
+
+            # For standard formats, extract directly
+            with open(path, "rb") as f:
+                # Extract all EXIF tags (not stopping early)
+                tags = exifread.process_file(f, details=False)
+                return tags
+        except Exception as e:
+            print(f"Warning: Could not extract EXIF data from {path}: {e}")
+            return {}
+
+    @staticmethod
+    def _extract_exif_from_raw(path: Path) -> dict:
+        """Extract EXIF from RAW file's embedded JPEG preview.
+
+        Args:
+            path: Path to RAW file
+
+        Returns:
+            Dictionary of EXIF tags
+        """
+        if rawpy is None or exifread is None:
+            return {}
+
+        try:
+            import io
+
+            with rawpy.imread(str(path)) as raw:
+                # Try to extract embedded JPEG thumbnail
+                try:
+                    thumb = raw.extract_thumb()
+                    if thumb.format == rawpy.ThumbFormat.JPEG:
+                        # Extract EXIF from JPEG thumbnail
+                        jpeg_data = io.BytesIO(thumb.data)
+                        tags = exifread.process_file(jpeg_data, details=False)
+                        return tags
+                except:
+                    pass
+
+            # Fallback: try reading EXIF directly from RAW file
+            with open(path, "rb") as f:
+                tags = exifread.process_file(f, details=False)
+                return tags
+
+        except Exception as e:
+            print(f"Warning: Could not extract EXIF from RAW file {path}: {e}")
+            return {}
+
+    @staticmethod
     def extract_all(path: Path) -> dict:
         """Extract all available EXIF metadata.
 

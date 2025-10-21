@@ -161,10 +161,12 @@ class MainWindow(QMainWindow):
                 """Background worker for loading library."""
                 finished = pyqtSignal(int)  # Emits total count when done
                 error = pyqtSignal(str)  # Emits error message on failure
+                progress = pyqtSignal(int, int, str)  # Emits (current, total, message)
 
-                def __init__(self, library_service):
+                def __init__(self, library_service, main_window):
                     super().__init__()
                     self.library_service = library_service
+                    self.main_window = main_window
 
                 def run(self):
                     try:
@@ -172,7 +174,11 @@ class MainWindow(QMainWindow):
                         logger = logging.getLogger(__name__)
                         logger.info("Background: Scanning photo directory...")
 
-                        self.library_service.load_library()
+                        # Load library with progress callback
+                        def progress_callback(current, total, message):
+                            self.progress.emit(current, total, message)
+
+                        self.library_service.load_library(progress_callback=progress_callback)
                         total = self.library_service.get_total_count()
 
                         logger.info(f"Background: Library loaded - {total} items")
@@ -203,6 +209,13 @@ class MainWindow(QMainWindow):
                     self.set_status("Failed to load library")
                     self._library_loaded = False
 
+            def on_library_progress(current: int, total: int, message: str):
+                """Called when library loading makes progress."""
+                # Update loading overlay with progress
+                progress_pct = int((current / total * 100)) if total > 0 else 0
+                self.show_loading(f"{message}\n{current}/{total} ({progress_pct}%)")
+                logger.debug(f"Library loading progress: {current}/{total}")
+
             def on_library_error(error_msg: str):
                 """Called when library loading fails."""
                 logger.error(f"Library loading failed: {error_msg}")
@@ -211,9 +224,10 @@ class MainWindow(QMainWindow):
                 self._library_loaded = False
 
             # Create and start worker thread
-            self._library_worker = LibraryLoadWorker(self.library_service)
+            self._library_worker = LibraryLoadWorker(self.library_service, self)
             self._library_worker.finished.connect(on_library_loaded)
             self._library_worker.error.connect(on_library_error)
+            self._library_worker.progress.connect(on_library_progress)
             self._library_worker.start()
 
     def _create_widgets(self):

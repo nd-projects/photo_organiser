@@ -99,23 +99,23 @@
 
 ### Implementation for User Story 2
 
-- [ ] T032 [US2] Create PhotoQualityRanker class in src/services/photo_quality.py implementing IPhotoQualityRanker interface
-- [ ] T033 [US2] Implement _score_iso() helper function for ISO quality scoring in src/services/photo_quality.py
-- [ ] T034 [US2] Implement _score_camera_shake() helper function using reciprocal rule in src/services/photo_quality.py
-- [ ] T035 [US2] Implement _score_aperture() helper function for optimal aperture range in src/services/photo_quality.py
-- [ ] T036 [US2] Implement _score_exposure_comp() helper function in src/services/photo_quality.py
-- [ ] T037 [US2] Implement _score_flash() helper function in src/services/photo_quality.py
-- [ ] T038 [US2] Implement PhotoQualityRanker.calculate_score() with weighted combination in src/services/photo_quality.py
-- [ ] T039 [US2] Implement PhotoQualityRanker.select_best_shots() to return top N by quality in src/services/photo_quality.py
-- [ ] T040 [US2] Modify LibraryService.load_library() to compute quality_score for each LibraryItem in src/services/library_service.py
-- [ ] T041 [US2] Implement LibraryService._group_items_by_date() helper method in src/services/library_service.py
-- [ ] T042 [US2] Implement LibraryService.get_days(year, month) method to return DayGroup list in src/services/library_service.py
-- [ ] T043 [US2] Create DaysView widget in src/ui/days_view.py with scrollable day sections
-- [ ] T044 [US2] Implement DaysView._create_day_section() to render day header and photos in src/ui/days_view.py
-- [ ] T045 [US2] Implement DaysView._create_best_shots_grid() to highlight best shots in src/ui/days_view.py
-- [ ] T046 [US2] Add DaysView to LibraryView tab navigation in src/ui/library_view.py
-- [ ] T047 [US2] Implement view switching with <500ms performance in src/ui/library_view.py
-- [ ] T048 [US2] Skip days without photos (only show days with content) in src/ui/days_view.py
+- [X] T032 [US2] Create PhotoQualityRanker class in src/services/photo_quality.py implementing IPhotoQualityRanker interface
+- [X] T033 [US2] Implement _score_iso() helper function for ISO quality scoring in src/services/photo_quality.py
+- [X] T034 [US2] Implement _score_camera_shake() helper function using reciprocal rule in src/services/photo_quality.py
+- [X] T035 [US2] Implement _score_aperture() helper function for optimal aperture range in src/services/photo_quality.py
+- [X] T036 [US2] Implement _score_exposure_comp() helper function in src/services/photo_quality.py
+- [X] T037 [US2] Implement _score_flash() helper function in src/services/photo_quality.py
+- [X] T038 [US2] Implement PhotoQualityRanker.calculate_score() with weighted combination in src/services/photo_quality.py
+- [X] T039 [US2] Implement PhotoQualityRanker.select_best_shots() to return top N by quality in src/services/photo_quality.py
+- [X] T040 [US2] Modify LibraryService.load_library() to compute quality_score for each LibraryItem in src/services/library_service.py
+- [X] T041 [US2] Implement LibraryService._group_items_by_date() helper method in src/services/library_service.py
+- [X] T042 [US2] Implement LibraryService.get_days(year, month) method to return DayGroup list in src/services/library_service.py
+- [X] T043 [US2] Create DaysView widget in src/ui/days_view.py with scrollable day sections
+- [X] T044 [US2] Implement DaysView._create_day_section() to render day header and photos in src/ui/days_view.py
+- [X] T045 [US2] Implement DaysView._create_best_shots_grid() to highlight best shots in src/ui/days_view.py
+- [X] T046 [US2] Add DaysView to LibraryView tab navigation in src/ui/library_view.py
+- [X] T047 [US2] Implement view switching with <500ms performance in src/ui/library_view.py
+- [X] T048 [US2] Skip days without photos (only show days with content) in src/ui/days_view.py
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work - can view all photos grid OR browse by days with best shots
 
